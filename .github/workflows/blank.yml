@@ -1,10 +1,12 @@
-name: Run Globoplay M3U Generator
+name: Run M3U Generator
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+  schedule:
+    - cron: '0 * * * *'  # Executa a cada hora (minuto 0 de cada hora)
 
 jobs:
   generate_playlist:
