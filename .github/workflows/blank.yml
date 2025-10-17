@@ -9,13 +9,12 @@ on:
 jobs:
   generate_playlist:
     runs-on: ubuntu-latest
-
     steps:
     - name: Check out repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v2
       with:
         python-version: '3.x'
 
@@ -25,21 +24,15 @@ jobs:
         pip install yt-dlp requests
 
     - name: Download cookies
-      env:
-        COOKIES_URL: ${{ secrets.COOKIES_URL }}
       run: |
-        if [ -z "$COOKIES_URL" ]; then
-          echo "COOKIES_URL secret is not set"
-          exit 1
-        fi
-        curl -fsSL -o cookies.txt "$COOKIES_URL"
+        curl -o cookies.txt ${{ secrets.COOKIES_URL }}
 
     - name: Generate M3U Playlist
       run: |
         python generate_m3u.py
 
     - name: Upload M3U Playlist
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v2
       with:
         name: playlist
-        path: PLAYLIST.m3u
+        path: ./PLAYLIST.m3u
