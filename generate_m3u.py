@@ -18,6 +18,10 @@ if not os.path.exists(cookies_path):
 
 # Lista de URLs de canais do YouTube (pode adicionar mais)
 globoplay_urls = [
+    "https://sicnoticias.pt/agora",
+    "https://www.rtp.pt/play/direto/rtp1",
+    "https://www.rtp.pt/play/direto/antena1",
+    "https://tviplayer.iol.pt/direto/cnn",
     "https://www.youtube.com/@CNNbrasil/live",
     "https://www.youtube.com/@cnnbrmoney/live",
     "https://www.youtube.com/@Laatusoficial/live",
