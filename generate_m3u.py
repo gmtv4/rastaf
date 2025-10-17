@@ -1,17 +1,17 @@
 import yt_dlp
 import concurrent.futures
-import requests
+import sys
 import os
 
-# URL do arquivo de cookies (garantido pelo GitHub Actions como secret)
-cookies_url = "https://github.com/Zsobix/YouTube_to_m3u/raw/refs/heads/main/cookies.firefox-private.txt"
-cookies_path = "globoplay_cookies.txt"  # Pode ser substituído pelo segredo se necessário
+if len(sys.argv) < 2:
+    print("Uso: python generate_m3u.py <caminho_para_cookies.txt>")
+    sys.exit(1)
 
-# Baixar cookies
-with open(cookies_path, "wb") as f:
-    f.write(requests.get(cookies_url).content)
+cookies_path = sys.argv[1]
+if not os.path.exists(cookies_path):
+    print(f"Arquivo de cookies não encontrado: {cookies_path}")
+    sys.exit(1)
 
-# Lista de URLs do Globoplay
 globoplay_urls = [
     "https://www.youtube.com/@recordnews/live",
     "https://www.youtube.com/@CNNbrasil/live",
@@ -27,7 +27,6 @@ globoplay_urls = [
     "https://www.youtube.com/@cmcapitalaovivo/live"
 ]
 
-# Função que extrai título, link M3U8 e thumbnail
 def extract_with_ytdlp(url):
     try:
         ydl_opts = {
@@ -62,9 +61,7 @@ def extract_with_ytdlp(url):
         print(f"[✘] Erro com {url}: {e}")
         return None, None, None
 
-# Gera o arquivo M3U com os dados extraídos
-output_path = "PLAYLIST.m3u"  # Salva no diretório do repositório
-
+output_path = "PLAYLIST.m3u"
 with open(output_path, "w", encoding='utf-8') as output_file:
     output_file.write("#EXTM3U\n")
 
