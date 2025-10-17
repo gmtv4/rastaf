@@ -13,6 +13,7 @@ with open(cookies_path, "wb") as f:
 
 # Lista de URLs do Globoplay
 globoplay_urls = [
+    "https://www.youtube.com/@recordnews/live",
     "https://www.youtube.com/@CNNbrasil/live",
     "https://www.youtube.com/@cnnbrmoney/live",
     "https://www.youtube.com/@Laatusoficial/live",
