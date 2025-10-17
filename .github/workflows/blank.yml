@@ -11,8 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true  # necessário para permitir commits
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -32,8 +34,16 @@ jobs:
         run: |
           python generate_m3u.py cookies.txt
 
-      - name: Upload M3U Playlist as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: playlist
-          path: ./PLAYLIST.m3u
+      - name: Commit and push updated PLAYLIST.m3u
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add PLAYLIST.m3u
+          
+          if git diff --cached --quiet; then
+            echo "Nenhuma mudança em PLAYLIST.m3u"
+          else
+            git commit -m "Atualiza PLAYLIST.m3u via GitHub Actions"
+            git push
+          fi
