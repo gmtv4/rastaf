@@ -1,19 +1,23 @@
 import yt_dlp
 import concurrent.futures
+import requests
 import sys
 import os
 
-if len(sys.argv) < 2:
+# Verifica se o caminho do arquivo de cookies foi passado como argumento
+if len(sys.argv) != 2:
     print("Uso: python generate_m3u.py <caminho_para_cookies.txt>")
     sys.exit(1)
 
 cookies_path = sys.argv[1]
+
+# Verifica se o arquivo existe
 if not os.path.exists(cookies_path):
-    print(f"Arquivo de cookies não encontrado: {cookies_path}")
+    print(f"Erro: Arquivo de cookies não encontrado em '{cookies_path}'")
     sys.exit(1)
 
+# Lista de URLs de canais do YouTube (pode adicionar mais)
 globoplay_urls = [
-    "https://www.youtube.com/@recordnews/live",
     "https://www.youtube.com/@CNNbrasil/live",
     "https://www.youtube.com/@cnnbrmoney/live",
     "https://www.youtube.com/@Laatusoficial/live",
@@ -27,6 +31,7 @@ globoplay_urls = [
     "https://www.youtube.com/@cmcapitalaovivo/live"
 ]
 
+# Função que extrai título, link M3U8 e thumbnail
 def extract_with_ytdlp(url):
     try:
         ydl_opts = {
@@ -61,7 +66,10 @@ def extract_with_ytdlp(url):
         print(f"[✘] Erro com {url}: {e}")
         return None, None, None
 
+# Caminho de saída do arquivo M3U
 output_path = "PLAYLIST.m3u"
+
+# Escreve o arquivo M3U
 with open(output_path, "w", encoding='utf-8') as output_file:
     output_file.write("#EXTM3U\n")
 
