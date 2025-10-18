@@ -23,6 +23,8 @@ globoplay_urls = [
     "https://www.rtp.pt/play/direto/antena1",
     "https://tviplayer.iol.pt/direto/cnn",
     "https://www.twitch.tv/erick_stephano0",
+    "https://www.youtube.com/@lagranjavipmx/live"
+    "https://www.youtube.com/@CarChaseChannelABC/live",
     "https://www.youtube.com/@ABCNews/live",
     "https://www.youtube.com/@CBSNews/live",
     "https://www.youtube.com/@NBCNews/live",
