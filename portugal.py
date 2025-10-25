@@ -1,122 +1,96 @@
 import requests
 from bs4 import BeautifulSoup
-import datetime
 import time
-import re
 import os
 
-# Define o nome do arquivo de saída conforme solicitado pelo usuário
+# Nome do arquivo de saída
 OUTPUT_FILE = "portugal.m3u"
-BASE_URL = "https://tviplayer.iol.pt"
+BASE_URL = "https://tviplayer.iol.pt/ultimos"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/122.0.0.0 Safari/537.36"
 }
 
-def get_video_details(page_number):
-    """Extrai detalhes dos vídeos de uma página específica da seção 'últimos'."""
-    # A URL correta é https://tviplayer.iol.pt/ultimos?page={page_number}
+def get_video_details(page_number=1):
+    """Extrai detalhes dos vídeos da página 'Últimos'."""
     url = f"{BASE_URL}/ultimos?page={page_number}"
-    print(f"A processar página: {url}")
+    print(f"➡️ A processar página: {url}")
 
     try:
         response = requests.get(url, headers=HEADERS, timeout=10)
-        response.raise_for_status() # Lança exceção para códigos de status HTTP ruins (4xx ou 5xx)
+        response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        print(f"Erro ao acessar a URL {url}: {e}")
+        print(f"❌ Erro ao aceder {url}: {e}")
         return []
 
-    soup = BeautifulSoup(response.content, "html.parser")
-    
-    # O seletor mudou. Agora os vídeos estão em <a> com a classe 'item-card'.
-    video_cards = soup.find_all("a", class_="item-card")
-    
+    soup = BeautifulSoup(response.text, "html.parser")
+    items = soup.find_all("li", class_="item")
+
+    if not items:
+        print("⚠️ Nenhum item encontrado na página.")
+        return []
+
     details = []
-    for card in video_cards:
+    for li in items:
         try:
-            # 1. Link do vídeo
-            link = card.get('href')
-            if not link or not link.startswith('/'):
-                continue # Pular se o link não for válido
+            # Extrai o link
+            a_tag = li.find("a", href=True)
+            if not a_tag:
+                continue
+            link = a_tag["href"]
+            if not link.startswith("http"):
+                link = BASE_URL + link
 
-            full_link = f"{BASE_URL}{link}"
+            # Extrai imagem
+            img_tag = li.find("img")
+            image_url = img_tag["src"] if img_tag else ""
 
-            # 2. Imagem (tvg-logo)
-            # A imagem está no estilo background-image de um elemento dentro do card
-            style_tag_element = card.find("div", class_="item-card-image-wrapper")
-            if style_tag_element:
-                style_tag = style_tag_element.get("style")
-                image_match = re.search(r"url\(['\"]?(.*?)['\"]?\)", style_tag)
-                image_url = image_match.group(1) if image_match else ""
-            else:
-                image_url = ""
+            # Extrai título e nome do programa
+            program_name = li.find("span", class_="item--name")
+            title = li.find("span", class_="item--title")
+            duration = li.find("span", class_="item--duration")
 
-            # 3. Título e Subtítulo
-            # O título principal do vídeo está em 'item-card-title'
-            title_element = card.find("span", class_="item-card-title")
-            title = title_element.text.strip() if title_element else "Sem Título"
-            
-            # O subtítulo (programa) está em 'item-card-program-title'
-            subtitle_element = card.find("span", class_="item-card-program-title")
-            subtitle = subtitle_element.text.strip() if subtitle_element else "Sem Programa"
-            
+            program = program_name.text.strip() if program_name else "Sem Programa"
+            title_text = title.text.strip() if title else "Sem Título"
+            duration_text = duration.text.strip() if duration else ""
+
             details.append({
-                "title": title,
-                "subtitle": subtitle,
-                "link": full_link,
+                "title": title_text,
+                "program": program,
+                "duration": duration_text,
+                "link": link,
                 "image_url": image_url
             })
-            
+
         except Exception as e:
-            print(f"Aviso: Não foi possível extrair todos os detalhes de um card. Erro: {e}")
+            print(f"⚠️ Erro ao processar item: {e}")
             continue
-            
+
     return details
 
 def write_m3u_file(video_details):
-    """Escreve os detalhes dos vídeos no arquivo M3U no formato EXTINF."""
-    
-    # O streamlink falhou consistentemente porque o TVI Player usa DRM e links temporários.
-    # O link final do vídeo não pode ser obtido via streamlink.
-    # Vamos gerar a playlist com uma URL informativa no lugar do link M3U8.
-
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as m3u8_file:
-        m3u8_file.write("#EXTM3U\n") # Adiciona o cabeçalho M3U
-        
-        count = 0
-        for detail in video_details:
-            # O link do vídeo é o link da página do IOL/TVI Player
-            link_da_pagina = detail["link"]
-            
-            # URL de substituição informativa
-            # O link M3U8 FINAL não pode ser obtido, então usamos o link da página
-            # com um aviso.
-            video_url_substituto = f"http://URL_NAO_DISPONIVEL_VIA_SCRAPING_DRM_TVI_PLAYER_VISITE_A_PAGINA:{link_da_pagina}"
-            
-            title_clean = detail["title"].replace(",", "").replace("\n", " ")
-            subtitle_clean = detail["subtitle"].replace(",", "").replace("\n", " ")
-            
-            m3u8_file.write(
-                f'#EXTINF:-1 group-title="TVI PLAYER" tvg-logo="{detail["image_url"]}",{subtitle_clean} - {title_clean}\n'
+    """Cria um arquivo M3U com os detalhes obtidos."""
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        f.write("#EXTM3U\n")
+        for v in video_details:
+            fake_url = f"http://DRM_PROTEGIDO_VISITE:{v['link']}"
+            f.write(
+                f'#EXTINF:-1 group-title="TVI PLAYER" tvg-logo="{v["image_url"]}",{v["program"]} - {v["title"]} ({v["duration"]})\n'
             )
-            m3u8_file.write(f"{video_url_substituto}\n")
-            m3u8_file.write("\n")
-            count += 1
-        
-        print(f"Geração da playlist concluída. {count} vídeos adicionados. Arquivo salvo como: {OUTPUT_FILE}")
-        print("ATENÇÃO: Os links de vídeo na playlist são substitutos, pois o streamlink não conseguiu extrair os links M3U8 reais devido a restrições de DRM/links temporários do TVI Player.")
+            f.write(fake_url + "\n\n")
 
+    print(f"✅ Playlist M3U criada com {len(video_details)} vídeos → {OUTPUT_FILE}")
+    print("⚠️ Os links reais de stream não podem ser obtidos (DRM ativo).")
 
 def main():
-    all_video_details = []
-    # O usuário original estava a iterar de 1 a 5. Vamos manter a iteração para 5 páginas.
-    for i in range(1, 6):
-        details = get_video_details(i)
-        all_video_details.extend(details)
-        # Adiciona um pequeno atraso para evitar ser bloqueado
-        time.sleep(1) 
-
-    write_m3u_file(all_video_details)
+    all_videos = []
+    # Podes ajustar o número de páginas aqui
+    for page in range(1, 6):
+        videos = get_video_details(page)
+        all_videos.extend(videos)
+        time.sleep(1)
+    write_m3u_file(all_videos)
 
 if __name__ == "__main__":
     main()
-
