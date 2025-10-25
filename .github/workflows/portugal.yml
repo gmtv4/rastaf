@@ -28,47 +28,61 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           
-          # 1. Extrai nomes de módulos de importações (excluindo 'import x as y' ou 'from x import y')
-          #    e remove módulos padrões do Python (como 'os', 'sys', 'json', etc.)
-          #    NOTA: O nome do módulo importado nem sempre é o nome do pacote PyPI.
-          #    Ex: 'import bs4' (módulo) é 'pip install beautifulsoup4' (pacote).
-          #    Para este caso, vamos assumir que o nome do módulo é o nome do pacote.
+          # Lista de pacotes PyPI conhecidos que têm nomes de importação diferentes
+          declare -A MODULE_TO_PACKAGE
+          MODULE_TO_PACKAGE["bs4"]="beautifulsoup4"
+          MODULE_TO_PACKAGE["yaml"]="PyYAML"
+          # Adicione mais traduções aqui se necessário
           
           # Lista de módulos que geralmente são pacotes PyPI e estavam no original
-          # Esta lista deve ser ajustada se o seu script usar outros pacotes
-          PACKAGES_TO_INSTALL="yt-dlp requests"
+          # Incluímos 'beautifulsoup4' diretamente para garantir a instalação correta de 'bs4'
+          PACKAGES_TO_INSTALL="yt-dlp requests beautifulsoup4"
 
           # Tenta analisar o arquivo portugal.py para encontrar outros imports
           if [ -f portugal.py ]; then
-            # Usa grep para encontrar linhas que começam com 'import '
-            # e extrai o nome do módulo (primeira palavra após 'import ')
-            # Filtra para remover módulos padrão que não precisam de pip install
-            # Nota: Esta é uma heurística simples e pode falhar em casos complexos.
-            
             # Lista de módulos padrão do Python que NÃO precisam ser instalados:
             STANDARD_MODULES="os|sys|json|re|time|datetime|pathlib|logging|collections|io|math|random|csv|sqlite3|threading|multiprocessing|argparse|socket|http|urllib|xml|html|ftplib|smtplib|poplib|imaplib|ssl|hashlib|base64|zlib|gzip|zipfile|tarfile"
             
-            # Extrai imports, filtra módulos padrão e adiciona à lista
-            ADDITIONAL_PACKAGES=$(grep -E '^\s*import\s+[a-zA-Z0-9_]+' portugal.py | \
-                                 awk '{print $2}' | \
+            # Extrai imports de 'import X' e 'from X import Y'
+            # 1. 'import X' -> captura X
+            # 2. 'from X import Y' -> captura X
+            ADDITIONAL_PACKAGES=$(grep -E '^\s*(import\s+|from\s+)[a-zA-Z0-9_]+' portugal.py | \
+                                 awk '{
+                                   if ($1 == "import") {
+                                     print $2
+                                   } else if ($1 == "from") {
+                                     print $2
+                                   }
+                                 }' | \
                                  sed 's/,//g' | \
                                  grep -vE "^($STANDARD_MODULES)$" | \
                                  tr '\n' ' ')
                                  
             PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL $ADDITIONAL_PACKAGES"
             
+            # Processa a lista final para aplicar as traduções
+            FINAL_PACKAGES=""
+            for module in $PACKAGES_TO_INSTALL; do
+              # Verifica se o módulo tem uma tradução conhecida
+              if [[ -n "${MODULE_TO_PACKAGE[$module]}" ]]; then
+                FINAL_PACKAGES+="${MODULE_TO_PACKAGE[$module]} "
+              else
+                FINAL_PACKAGES+="$module "
+              fi
+            done
+            
             # Remove duplicatas e espaços extras
-            PACKAGES_TO_INSTALL=$(echo $PACKAGES_TO_INSTALL | tr ' ' '\n' | sort -u | tr '\n' ' ')
+            FINAL_PACKAGES=$(echo $FINAL_PACKAGES | tr ' ' '\n' | sort -u | tr '\n' ' ')
             
-            echo "Pacotes identificados para instalação: $PACKAGES_TO_INSTALL"
+            echo "Pacotes identificados para instalação: $FINAL_PACKAGES"
             
-            if [ -n "$PACKAGES_TO_INSTALL" ]; then
-              pip install $PACKAGES_TO_INSTALL
+            if [ -n "$FINAL_PACKAGES" ]; then
+              pip install $FINAL_PACKAGES
             else
               echo "Nenhum pacote PyPI não-padrão identificado para instalação."
             fi
           else
-            echo "Arquivo portugal.py não encontrado. Instalando apenas yt-dlp e requests como fallback."
+            echo "Arquivo portugal.py não encontrado. Instalando apenas yt-dlp, requests e beautifulsoup4 como fallback."
             pip install $PACKAGES_TO_INSTALL
           fi
 
