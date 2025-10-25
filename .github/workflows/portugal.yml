@@ -1,0 +1,51 @@
+name: Run M3U Generator
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 * * * *'  # Executa a cada hora (minuto 0 de cada hora)
+
+jobs:
+  generate_playlist:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true  # necessário para permitir commits
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install yt-dlp requests
+
+      - name: Download cookies from secret URL
+        run: |
+          curl -L -o cookies.txt "${{ secrets.COOKIES_URL }}"
+
+      - name: Run M3U playlist generator script
+        run: |
+          python portugal.py cookies.txt
+
+      - name: Commit and push updated PLAYLIST.m3u
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add PLAYLIST.m3u
+          
+          if git diff --cached --quiet; then
+            echo "Nenhuma mudança em PLAYLIST.m3u"
+          else
+            git commit -m "Atualiza PLAYLIST.m3u via GitHub Actions"
+            git push
+          fi
