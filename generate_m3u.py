@@ -24,7 +24,7 @@ globoplay_urls = [
     "https://www.youtube.com/@euronewses/live",
     "https://www.youtube.com/@euronewspt/live",
     "https://www.youtube.com/@televisapuebla/live",
-    "https://www.youtube.com/@nmas/live",
+    "https://www.youtube.com/@CarChaseChannelABC/live",
     "https://www.youtube.com/@lagranjavipmx/live",
     "https://www.youtube.com/@televisaguadalajara/live",
     "https://www.youtube.com/@ABCNews/live",
