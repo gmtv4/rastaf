@@ -1,26 +1,61 @@
-import requests
-from bs4 import BeautifulSoup
-import re
 import os
+import re
+import time
+from bs4 import BeautifulSoup
+from selenium import webdriver
 
-OUTPUT_FILE = "portugal.m3u"
+# ==============================
+# CONFIGURAÇÕES
+# ==============================
 BASE_URL = "https://tviplayer.iol.pt"
+URL_TVI_PLAYER = "https://tviplayer.iol.pt/programas/jornal-nacional"  # 👉 altere se quiser outro programa
+OUTPUT_FILE = "portugal.m3u"
 HTML_FILE = "rendered_page.html"
 
 
+# ==============================
+# ETAPA 1: BAIXAR HTML RENDERIZADO (via Selenium)
+# ==============================
+def baixar_html_renderizado(url, output_file):
+    """Usa Selenium para renderizar e salvar o HTML completo do TVI Player."""
+    print(f"🔄 Baixando página renderizada: {url}")
+
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1920,1080")
+
+    driver = webdriver.Chrome(options=options)
+    driver.get(url)
+    time.sleep(6)  # Aguarda o carregamento do conteúdo dinâmico
+
+    html = driver.page_source
+    driver.quit()
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(html)
+
+    print(f"✅ HTML renderizado salvo em: {output_file}")
+
+
+# ==============================
+# ETAPA 2: EXTRAIR DETALHES DOS VÍDEOS
+# ==============================
 def extract_video_details_from_html(html_content):
     """Extrai detalhes dos vídeos do HTML renderizado."""
     soup = BeautifulSoup(html_content, "html.parser")
     details = []
 
-    # 1️⃣ --- FORMATO ANTIGO ---
+    # --- FORMATO ANTIGO ---
     list_items_div = soup.find("div", class_="list-items")
     if list_items_div:
         video_cards = list_items_div.find_all("a", class_="item-card")
         for card in video_cards:
             try:
-                link = card.get('href')
-                if not link or not link.startswith('/'):
+                link = card.get("href")
+                if not link or not link.startswith("/"):
                     continue
                 full_link = f"{BASE_URL}{link}"
 
@@ -42,12 +77,13 @@ def extract_video_details_from_html(html_content):
                     "title": title,
                     "subtitle": subtitle,
                     "link": full_link,
-                    "image_url": image_url
+                    "image_url": image_url,
+                    "duration": ""
                 })
             except Exception as e:
-                print(f"Aviso: Erro ao processar card antigo. {e}")
+                print(f"Aviso: erro ao processar card antigo. {e}")
 
-    # 2️⃣ --- NOVO FORMATO (<li class="item">) ---
+    # --- NOVO FORMATO (<li class="item">) ---
     li_items = soup.find_all("li", class_="item")
     for li in li_items:
         try:
@@ -82,13 +118,16 @@ def extract_video_details_from_html(html_content):
                 "image_url": image_url
             })
         except Exception as e:
-            print(f"Aviso: Erro ao processar item <li>. {e}")
+            print(f"Aviso: erro ao processar item <li>. {e}")
 
     return details
 
 
+# ==============================
+# ETAPA 3: GERAR PLAYLIST .M3U
+# ==============================
 def write_m3u_file(video_details):
-    """Escreve os detalhes dos vídeos no arquivo M3U."""
+    """Gera o arquivo M3U com as informações dos vídeos."""
     with open(OUTPUT_FILE, "w", encoding="utf-8") as m3u8_file:
         m3u8_file.write("#EXTM3U\n")
 
@@ -110,22 +149,25 @@ def write_m3u_file(video_details):
             m3u8_file.write(f"{video_url_substituto}\n\n")
             count += 1
 
-        print(f"Geração concluída: {count} vídeos adicionados → {OUTPUT_FILE}")
-        print("⚠️ Os links são substitutos. Use Streamlink para abrir o vídeo real:")
-        print("   Exemplo: streamlink 'https://tviplayer.iol.pt/programa/.../video/...' best")
+        print(f"✅ Playlist gerada: {OUTPUT_FILE} ({count} vídeos adicionados)")
+        print("⚠️ Os links são substitutos. Para abrir o vídeo real, use:")
+        print("   streamlink 'https://tviplayer.iol.pt/programa/.../video/...' best")
 
 
+# ==============================
+# MAIN
+# ==============================
 def main():
+    # Baixa o HTML automaticamente, se ainda não existir
     if not os.path.exists(HTML_FILE):
-        print(f"Erro: Arquivo {HTML_FILE} não encontrado.")
-        return
+        baixar_html_renderizado(URL_TVI_PLAYER, HTML_FILE)
 
     with open(HTML_FILE, "r", encoding="utf-8") as f:
         html_content = f.read()
 
     video_details = extract_video_details_from_html(html_content)
     if not video_details:
-        print("Nenhum vídeo encontrado no HTML.")
+        print("❌ Nenhum vídeo encontrado no HTML.")
         return
 
     write_m3u_file(video_details)
