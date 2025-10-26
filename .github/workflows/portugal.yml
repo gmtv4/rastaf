@@ -52,10 +52,10 @@ jobs:
           if [ -f "$PY_FILE" ]; then
             echo "🔍 Detectando imports..."
             # Lista de módulos padrão do Python que não precisam de instalação
-            STANDARD_MODULES="os|sys|json|re|time|datetime|pathlib|logging|collections|io|math|random|csv|sqlite3|threading|multiprocessing|argparse|socket|http|urllib|xml|html|ftplib|smtplib|poplib|imaplib|ssl|hashlib|base64|zlib|gzip|zipfile|tarfile|subprocess|tempfile|shutil|enum|typing|functools|contextlib|itertools|dataclasses|decimal|fractions|statistics"
+            STANDARD_MODULES="os|sys|json|re|time|datetime|pathlib|logging|collections|io|math|random|csv|sqlite3|threading|multiprocessing|argparse|socket|http|urllib|xml|html|ftplib|smtplib|poplib|imaplib|ssl|hashlib|base64|zlib|gzip|zipfile|tarfile|subprocess|tempfile|shutil|enum|typing|functools|contextlib|itertools|dataclasses|decimal|fractions|statistics|concurrent|concurrent.futures"
 
             # Extrai os nomes após 'import' e 'from'
-            IMPORTS=$(grep -E '^\s*(import|from)\s+[a-zA-Z0-9_]+' "$PY_FILE" | \
+            IMPORTS=$(grep -E '^\s*(import|from)\s+[a-zA-Z0-9_.]+' "$PY_FILE" | \
                       sed -E 's/^\s*(import|from)\s+//' | \
                       awk '{print $1}' | \
                       sed 's/,//g' | \
@@ -87,6 +87,7 @@ jobs:
           else
             echo "❌ Nenhum arquivo Python encontrado."
           fi
+
 
       - name: Download cookies from secret URL
         run: |
