@@ -18,6 +18,8 @@ if not os.path.exists(cookies_path):
 
 # Lista de URLs de canais do YouTube (pode adicionar mais)
 globoplay_urls = [
+    "https://www.venevisionplay.com/player/channel/66cf63debda7d300166c665c/",
+    "https://canal8.com.ve/en-directo/",
     "https://www.youtube.com/@televisatijuanaof/live",
     "https://www.youtube.com/@TelevisaVeracruzOficial/live",
     "https://www.youtube.com/@aztecanoticias/live",
