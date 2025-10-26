@@ -6,7 +6,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 * * * *'  # Executa a cada hora (minuto 0 de cada hora)
+    - cron: '0 * * * *'  # Executa a cada hora
 
 jobs:
   generate_playlist:
@@ -16,74 +16,76 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          persist-credentials: true  # necessário para permitir commits
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install dependencies automatically
         id: install_deps
         run: |
           python -m pip install --upgrade pip
-          
-          # Lista de pacotes PyPI conhecidos que têm nomes de importação diferentes
+
+          # -----------------------------
+          # Mapeamento de módulos -> pacotes PyPI
+          # -----------------------------
           declare -A MODULE_TO_PACKAGE
           MODULE_TO_PACKAGE["bs4"]="beautifulsoup4"
           MODULE_TO_PACKAGE["yaml"]="PyYAML"
-          # Adicione mais traduções aqui se necessário
-          
-          # Lista de módulos que geralmente são pacotes PyPI e estavam no original
-          # Incluímos 'beautifulsoup4' diretamente para garantir a instalação correta de 'bs4'
-          PACKAGES_TO_INSTALL="yt-dlp requests beautifulsoup4"
+          MODULE_TO_PACKAGE["selenium"]="selenium"
+          MODULE_TO_PACKAGE["requests"]="requests"
+          MODULE_TO_PACKAGE["yt_dlp"]="yt-dlp"
+          MODULE_TO_PACKAGE["cv2"]="opencv-python"
+          MODULE_TO_PACKAGE["PIL"]="Pillow"
 
-          # Tenta analisar o arquivo portugal.py para encontrar outros imports
-          if [ -f portugal.py ]; then
-            # Lista de módulos padrão do Python que NÃO precisam ser instalados:
-            STANDARD_MODULES="os|sys|json|re|time|datetime|pathlib|logging|collections|io|math|random|csv|sqlite3|threading|multiprocessing|argparse|socket|http|urllib|xml|html|ftplib|smtplib|poplib|imaplib|ssl|hashlib|base64|zlib|gzip|zipfile|tarfile"
-            
-            # Extrai imports de 'import X' e 'from X import Y'
-            # 1. 'import X' -> captura X
-            # 2. 'from X import Y' -> captura X
-            ADDITIONAL_PACKAGES=$(grep -E '^\s*(import\s+|from\s+)[a-zA-Z0-9_]+' portugal.py | \
-                                 awk '{
-                                   if ($1 == "import") {
-                                     print $2
-                                   } else if ($1 == "from") {
-                                     print $2
-                                   }
-                                 }' | \
-                                 sed 's/,//g' | \
-                                 grep -vE "^($STANDARD_MODULES)$" | \
-                                 tr '\n' ' ')
-                                 
-            PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL $ADDITIONAL_PACKAGES"
-            
-            # Processa a lista final para aplicar as traduções
+          # -----------------------------
+          # Detecta automaticamente o arquivo Python principal
+          # -----------------------------
+          PY_FILE=$(ls *.py | head -n 1)
+          echo "📄 Arquivo Python detectado: $PY_FILE"
+
+          # -----------------------------
+          # Detecta imports do arquivo
+          # -----------------------------
+          if [ -f "$PY_FILE" ]; then
+            echo "🔍 Detectando imports..."
+            # Lista de módulos padrão do Python que não precisam de instalação
+            STANDARD_MODULES="os|sys|json|re|time|datetime|pathlib|logging|collections|io|math|random|csv|sqlite3|threading|multiprocessing|argparse|socket|http|urllib|xml|html|ftplib|smtplib|poplib|imaplib|ssl|hashlib|base64|zlib|gzip|zipfile|tarfile|subprocess|tempfile|shutil|enum|typing|functools|contextlib|itertools|dataclasses|decimal|fractions|statistics"
+
+            # Extrai os nomes após 'import' e 'from'
+            IMPORTS=$(grep -E '^\s*(import|from)\s+[a-zA-Z0-9_]+' "$PY_FILE" | \
+                      sed -E 's/^\s*(import|from)\s+//' | \
+                      awk '{print $1}' | \
+                      sed 's/,//g' | \
+                      sort -u | \
+                      grep -vE "^($STANDARD_MODULES)$" || true)
+
+            echo "📦 Módulos detectados: $IMPORTS"
+
+            # Traduz os módulos em pacotes PyPI (quando necessário)
             FINAL_PACKAGES=""
-            for module in $PACKAGES_TO_INSTALL; do
-              # Verifica se o módulo tem uma tradução conhecida
+            for module in $IMPORTS; do
               if [[ -n "${MODULE_TO_PACKAGE[$module]}" ]]; then
                 FINAL_PACKAGES+="${MODULE_TO_PACKAGE[$module]} "
               else
                 FINAL_PACKAGES+="$module "
               fi
             done
-            
+
             # Remove duplicatas e espaços extras
-            FINAL_PACKAGES=$(echo $FINAL_PACKAGES | tr ' ' '\n' | sort -u | tr '\n' ' ')
-            
-            echo "Pacotes identificados para instalação: $FINAL_PACKAGES"
-            
+            FINAL_PACKAGES=$(echo "$FINAL_PACKAGES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
+            echo "📦 Pacotes PyPI finais para instalação: $FINAL_PACKAGES"
+
             if [ -n "$FINAL_PACKAGES" ]; then
               pip install $FINAL_PACKAGES
             else
-              echo "Nenhum pacote PyPI não-padrão identificado para instalação."
+              echo "Nenhum pacote adicional necessário."
             fi
           else
-            echo "Arquivo portugal.py não encontrado. Instalando apenas yt-dlp, requests e beautifulsoup4 como fallback."
-            pip install $PACKAGES_TO_INSTALL
+            echo "❌ Nenhum arquivo Python encontrado."
           fi
 
       - name: Download cookies from secret URL
@@ -92,7 +94,9 @@ jobs:
 
       - name: Run M3U playlist generator script
         run: |
-          python portugal.py cookies.txt
+          PY_FILE=$(ls *.py | head -n 1)
+          echo "🚀 Executando script: $PY_FILE"
+          python "$PY_FILE" cookies.txt
 
       - name: Commit and push updated PLAYLIST.m3u
         run: |
