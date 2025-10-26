@@ -26,6 +26,7 @@ globoplay_urls = [
     "https://www.youtube.com/@multimedios/live",
     "https://www.youtube.com/@Nmasmty/live",
     "https://www.youtube.com/@noticiascaracol/live",
+    "https://www.youtube.com/@NoticiasRCN/live",
     "https://www.youtube.com/@noticias/live",
     "https://www.twitch.tv/erick_stephano0",
     "https://www.youtube.com/@France24_es/live",
