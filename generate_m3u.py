@@ -18,20 +18,13 @@ if not os.path.exists(cookies_path):
 
 # Lista de URLs de canais do YouTube (pode adicionar mais)
 globoplay_urls = [
+    "https://www.youtube.com/@radiotvcdlsp/live",
+    "https://www.youtube.com/@sbtbrasilia/live",
     "https://www.youtube.com/@6abcActionNews/live",          # 6abc Philadelphia
     "https://www.youtube.com/@ABC13Houston/live",          # ABC13 Houston
     "https://www.youtube.com/@4NewsNow/live",              # 4 News Now
     "https://www.youtube.com/@ARYNewsOfficial/live",       # ARY News
     "https://www.youtube.com/@CBS42/live",                 # CBS 42
-    "https://www.youtube.com/@CanmoreAlberta/live",        # CanmoreAlberta.com
-    "https://www.youtube.com/@cnnnews18/live",             # CNN-News18
-    "https://www.youtube.com/@Denver7News/live",           # Denver7
-    "https://www.youtube.com/@FOX29Philadelphia/live",     # FOX 29 Philadelphia
-    "https://www.youtube.com/@FOX11LosAngeles/live",       # FOX 11 Los Angeles
-    "https://www.youtube.com/@natgeo/live",                # National Geographic
-    "https://www.youtube.com/@wplglocal10/live",           # WPLG Local 10
-    "https://www.youtube.com/@TampaBay28/live",            # Tampa Bay 28
-    "https://www.youtube.com/@ABC7NewsBayArea/live",       # ABC7 News Bay Area
     "https://www.venevisionplay.com/player/channel/66cf63debda7d300166c665c/",  # Venevisión Play
     "https://www.youtube.com/@televisatijuanaof/live",                       # Televisa Tijuana
     "https://www.youtube.com/@TelevisaVeracruzOficial/live",                 # Televisa Veracruz Oficial
