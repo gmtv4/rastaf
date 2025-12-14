@@ -41,6 +41,8 @@ globoplay_urls = [
     "https://www.youtube.com/@ABCNews/live",
     "https://www.youtube.com/@CBSNews/live",
     "https://www.youtube.com/@NBCNews/live",
+    "https://www.youtube.com/@SBTNews/live",
+    "https://www.youtube.com/@globonews/live",
     "https://www.youtube.com/@CNNbrasil/live",
     "https://www.youtube.com/@cnnbrmoney/live",
     "https://www.youtube.com/@Laatusoficial/live",
