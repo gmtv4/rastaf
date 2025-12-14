@@ -43,13 +43,14 @@ globoplay_urls = [
     "https://www.youtube.com/@noticiascaracol/live",                         # Noticias Caracol
     "https://www.youtube.com/@NoticiasRCN/live",                             # Noticias RCN
     "https://www.youtube.com/@noticias/live",                                # Noticias (Genérico)
-    "https://www.twitch.tv/erick_stephano0",                                 # Twitch - erick_stephano0
+    "https://www.twitch.tv/lacasadealofok2",                                 
     "https://www.youtube.com/@France24_es/live",                             # France 24 Español
     "https://www.youtube.com/@euronewses/live",                              # Euronews Español
     "https://www.youtube.com/@euronewspt/live",                              # Euronews Português
     "https://www.youtube.com/@televisapuebla/live",                          # Televisa Puebla
     "https://www.youtube.com/@CarChaseChannelABC/live",                      # Car Chase Channel ABC
     "https://www.youtube.com/@lagranjavipmx/live",                           # La Granja VIP MX
+    "https://www.youtube.com/@ZonaGemelosYT/live",                           # La Casa de Los Gemelos
     "https://www.youtube.com/@televisaguadalajara/live",                     # Televisa Guadalajara
     "https://www.youtube.com/@ABCNews/live",                                 # ABC News
     "https://www.youtube.com/@CBSNews/live",                                 # CBS News
