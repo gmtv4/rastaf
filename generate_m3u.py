@@ -18,13 +18,7 @@ if not os.path.exists(cookies_path):
 
 # Lista de URLs de canais do YouTube (pode adicionar mais)
 globoplay_urls = [
-    "https://www.youtube.com/@radiotvcdlsp/live",
     "https://www.youtube.com/@sbtbrasilia/live",
-    "https://www.youtube.com/@6abcActionNews/live",          # 6abc Philadelphia
-    "https://www.youtube.com/@ABC13Houston/live",          # ABC13 Houston
-    "https://www.youtube.com/@4NewsNow/live",              # 4 News Now
-    "https://www.youtube.com/@ARYNewsOfficial/live",       # ARY News
-    "https://www.youtube.com/@CBS42/live",                 # CBS 42
     "https://www.venevisionplay.com/player/channel/66cf63debda7d300166c665c/",  # Venevisión Play
     "https://www.youtube.com/@televisatijuanaof/live",                       # Televisa Tijuana
     "https://www.youtube.com/@TelevisaVeracruzOficial/live",                 # Televisa Veracruz Oficial
@@ -52,6 +46,7 @@ globoplay_urls = [
     "https://www.youtube.com/@globonews/live",                               # GloboNews
     "https://www.youtube.com/@CNNEspanol/live",            # CNN en Español
     "https://www.youtube.com/@cnnturk/live",               # CNN TÜRK
+    "https://www.youtube.com/@CNNIDOFFICIAL/live",
     "https://www.youtube.com/@CNNbrasil/live",                               # CNN Brasil (Novo Handle)
     "https://www.youtube.com/@cnnbrmoney/live",                              # CNN Brasil Business/Money
     "https://www.youtube.com/@Laatusoficial/live",                           # Laatus Oficial
@@ -63,6 +58,12 @@ globoplay_urls = [
     "https://www.youtube.com/@bandjornalismo/live",                          # Band Jornalismo
     "https://www.youtube.com/@stories_das_celebridades/live",                # Stories das Celebridades
     "https://www.youtube.com/@cmcapitalaovivo/live"                          # CM Capital Ao Vivo
+    "https://www.youtube.com/@6abcActionNews/live",          # 6abc Philadelphia
+    "https://www.youtube.com/@ABC13Houston/live",          # ABC13 Houston
+    "https://www.youtube.com/@4NewsNow/live",              # 4 News Now
+    "https://www.youtube.com/@ARYNewsOfficial/live",       # ARY News
+    "https://www.youtube.com/@CBS42/live",                 # CBS 42    
+    "https://www.youtube.com/@radiotvcdlsp/live",
 ]
 
 # Função que extrai título, link M3U8 e thumbnail
