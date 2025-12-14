@@ -18,30 +18,57 @@ if not os.path.exists(cookies_path):
 
 # Lista de URLs de canais do YouTube (pode adicionar mais)
 globoplay_urls = [
-    "https://www.youtube.com/watch?v=G_7kxV8jKV0",  # 6abc Philadelphia
-    "https://www.youtube.com/watch?v=SDK_m1_BVJ4",  # ABC13 Houston
-    "https://www.youtube.com/watch?v=5lSMFuW_51s",  # 4 News Now
-    "https://www.youtube.com/watch?v=s3iVFJoxrYc",  # ABC7
-    "https://www.youtube.com/watch?v=RqUZ2Fv9l8w",  # ARY News
-    "https://www.youtube.com/watch?v=jaB8i8npPZc",  # CBS 42
-    "https://www.youtube.com/watch?v=1rWgAIyFH4o",  # CanmoreAlberta.com
-    "https://www.youtube.com/watch?v=Qr61waJ6AZg",  # CNN en Español
-    "https://www.youtube.com/watch?v=tNlfkKQ6jCU",  # CNN Brasil
-    "https://www.youtube.com/watch?v=6N8_r2uwLEc",  # CNN TÜRK
-    "https://www.youtube.com/watch?v=w-VOdz1XSng",  # CNN-News18
-    "https://www.youtube.com/watch?v=2onez39FUc0",  # Canal 12 Trenque Lauquen
-    "https://www.youtube.com/watch?v=LIeND9IgRIk",  # Diputados TV
-    "https://www.youtube.com/watch?v=OGKI-lcm4rs",  # Denver7
-    "https://www.youtube.com/watch?v=EjIF9jS46cU",  # FOX 29 Philadelphia
-    "https://www.youtube.com/watch?v=o4PB-FPEToM",  # FOX 11 Los Angeles
-    "https://www.youtube.com/watch?v=KXSqZkPzxm8",  # NBC News
-    "https://www.youtube.com/watch?v=FqQJmDiW0xs",  # National Geographic
-    "https://www.youtube.com/watch?v=Lly8TzZXImQ",  # Newsmax
-    "https://www.youtube.com/watch?v=mKvIkuSAqV8",  # TVN
-    "https://www.youtube.com/watch?v=k4HCyWrXVUw",  # WPLG Local 10
-    "https://www.youtube.com/watch?v=VQPQo0xAZSQ",  # Tampa Bay 28
-    "https://www.youtube.com/watch?v=_VqvVJfmyfs",  # ABC7 News Bay Area
-    "https://www.youtube.com/watch?v=zcWXboTnous"   # América TV
+    "https://www.youtube.com/@6abcActionNews/live",          # 6abc Philadelphia
+    "https://www.youtube.com/@ABC13Houston/live",          # ABC13 Houston
+    "https://www.youtube.com/@4NewsNow/live",              # 4 News Now
+    "https://www.youtube.com/@ARYNewsOfficial/live",       # ARY News
+    "https://www.youtube.com/@CBS42/live",                 # CBS 42
+    "https://www.youtube.com/@CanmoreAlberta/live",        # CanmoreAlberta.com
+    "https://www.youtube.com/@cnnnews18/live",             # CNN-News18
+    "https://www.youtube.com/@Denver7News/live",           # Denver7
+    "https://www.youtube.com/@FOX29Philadelphia/live",     # FOX 29 Philadelphia
+    "https://www.youtube.com/@FOX11LosAngeles/live",       # FOX 11 Los Angeles
+    "https://www.youtube.com/@natgeo/live",                # National Geographic
+    "https://www.youtube.com/@wplglocal10/live",           # WPLG Local 10
+    "https://www.youtube.com/@TampaBay28/live",            # Tampa Bay 28
+    "https://www.youtube.com/@ABC7NewsBayArea/live",       # ABC7 News Bay Area
+    "https://www.venevisionplay.com/player/channel/66cf63debda7d300166c665c/",  # Venevisión Play
+    "https://www.youtube.com/@televisatijuanaof/live",                       # Televisa Tijuana
+    "https://www.youtube.com/@TelevisaVeracruzOficial/live",                 # Televisa Veracruz Oficial
+    "https://www.youtube.com/@aztecanoticias/live",                          # Azteca Noticias
+    "https://www.youtube.com/@televisamexicaliof/live",                       # Televisa Mexicali
+    "https://www.youtube.com/@canal23televisaensenada97/live",               # Canal 23 Televisa Ensenada
+    "https://www.youtube.com/@multimedios/live",                             # Multimedios
+    "https://www.youtube.com/@Nmasmty/live",                                 # N+ Monterrey
+    "https://www.youtube.com/@noticiascaracol/live",                         # Noticias Caracol
+    "https://www.youtube.com/@NoticiasRCN/live",                             # Noticias RCN
+    "https://www.youtube.com/@noticias/live",                                # Noticias (Genérico)
+    "https://www.twitch.tv/erick_stephano0",                                 # Twitch - erick_stephano0
+    "https://www.youtube.com/@France24_es/live",                             # France 24 Español
+    "https://www.youtube.com/@euronewses/live",                              # Euronews Español
+    "https://www.youtube.com/@euronewspt/live",                              # Euronews Português
+    "https://www.youtube.com/@televisapuebla/live",                          # Televisa Puebla
+    "https://www.youtube.com/@CarChaseChannelABC/live",                      # Car Chase Channel ABC
+    "https://www.youtube.com/@lagranjavipmx/live",                           # La Granja VIP MX
+    "https://www.youtube.com/@televisaguadalajara/live",                     # Televisa Guadalajara
+    "https://www.youtube.com/@ABCNews/live",                                 # ABC News
+    "https://www.youtube.com/@CBSNews/live",                                 # CBS News
+    "https://www.youtube.com/@NBCNews/live",                                 # NBC News
+    "https://www.youtube.com/@SBTNews/live",                                 # SBT News
+    "https://www.youtube.com/@globonews/live",                               # GloboNews
+    "https://www.youtube.com/@CNNEspanol/live",            # CNN en Español
+    "https://www.youtube.com/@cnnturk/live",               # CNN TÜRK
+    "https://www.youtube.com/@CNNbrasil/live",                               # CNN Brasil (Novo Handle)
+    "https://www.youtube.com/@cnnbrmoney/live",                              # CNN Brasil Business/Money
+    "https://www.youtube.com/@Laatusoficial/live",                           # Laatus Oficial
+    "https://www.youtube.com/@tcnewsoficial/live",                           # TC News Oficial
+    "https://www.youtube.com/@ArenaTrader/live",                             # Arena Trader
+    "https://www.youtube.com/@ClearCorretoradeValores/live",                 # Clear Corretora de Valores
+    "https://www.youtube.com/@CharllesNaderSHARKSSCHOOL/live",               # Charlles Nader SHARKS SCHOOL
+    "https://www.youtube.com/@TOPGAIN/live",                                 # TOP GAIN
+    "https://www.youtube.com/@bandjornalismo/live",                          # Band Jornalismo
+    "https://www.youtube.com/@stories_das_celebridades/live",                # Stories das Celebridades
+    "https://www.youtube.com/@cmcapitalaovivo/live"                          # CM Capital Ao Vivo
 ]
 
 # Função que extrai título, link M3U8 e thumbnail
