@@ -43,6 +43,7 @@ globoplay_urls = [
     "https://www.youtube.com/@ABCNews/live",                                 # ABC News
     "https://www.youtube.com/@CBSNews/live",                                 # CBS News
     "https://www.youtube.com/@NBCNews/live",                                 # NBC News
+    "https://www.youtube.com/live/ab0btHNogxo",                              # SBT News - EXCLUSIVO
     "https://www.youtube.com/@SBTNews/live",                                 # SBT News
     "https://www.youtube.com/@globonews/live",                               # GloboNews
     "https://www.youtube.com/@CNNEspanol/live",            # CNN en Español
