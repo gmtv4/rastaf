@@ -18,9 +18,11 @@ if not os.path.exists(cookies_path):
 
 # Lista de URLs de canais do YouTube (pode adicionar mais)
 globoplay_urls = [
+    "https://www.rtve.es/play/videos/directo/canales-lineales/la-1/",
+    "https://www.rtve.es/play/videos/directo/canales-lineales/la-2/",
     "https://www.youtube.com/@tvsucessobandgo/live",
     "https://www.youtube.com/@sbtbrasilia/live",
-    "https://www.venevisionplay.com/player/channel/66cf63debda7d300166c665c/",  # Venevisión Play
+    "https://www.venevisionplay.com/page/646792d82a19035a166745f6#",  # Venevisión Play
     "https://www.youtube.com/@televisatijuanaof/live",                       # Televisa Tijuana
     "https://www.youtube.com/@TelevisaVeracruzOficial/live",                 # Televisa Veracruz Oficial
     "https://www.youtube.com/@aztecanoticias/live",                          # Azteca Noticias
