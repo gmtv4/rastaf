@@ -23,7 +23,7 @@ jobs:
 
       - name: Download playlist
         run: |
-          wget -q -O lista.m3u "https://github.com/gratinomaster/JCTV/raw/refs/heads/main/lista1.m3u"
+          wget -q -O lista.m3u "https://github.com/gratinomaster/1/raw/refs/heads/main/lista1.M3U"
 
       - name: Extract channel IDs (FIXED)
         run: |
