@@ -25,10 +25,11 @@ jobs:
         run: |
           wget -q -O lista.m3u "https://github.com/gratinomaster/JCTV/raw/refs/heads/main/lista1.m3u"
 
-      - name: Extract channel IDs
+      - name: Extract channel IDs (FIXED)
         run: |
           grep -o 'tvg-id="[^"]*"' lista.m3u \
           | sed 's/tvg-id="//;s/"//' \
+          | grep -v '^$' \
           | sort -u > canais.txt
 
       - name: Extract EPG URLs (FIXED)
@@ -78,14 +79,14 @@ jobs:
 
           echo '</tv>' >> epg.xml
 
-      - name: Filter EPG
+      - name: Filter EPG (SAFE)
         run: |
           echo '<?xml version="1.0" encoding="UTF-8"?>' > LISTA.xml
           echo '<tv>' >> LISTA.xml
 
           while read id; do
-            xmlstarlet sel -t -c "//channel[@id='$id']" epg.xml >> LISTA.xml
-            xmlstarlet sel -t -c "//programme[@channel='$id']" epg.xml >> LISTA.xml
+            xmlstarlet sel -t -c "//channel[@id='$id']" epg.xml >> LISTA.xml 2>/dev/null || true
+            xmlstarlet sel -t -c "//programme[@channel='$id']" epg.xml >> LISTA.xml 2>/dev/null || true
           done < canais.txt
 
           echo '</tv>' >> LISTA.xml
