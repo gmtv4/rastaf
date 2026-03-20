@@ -6,7 +6,10 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 * * * *'  # Executa a cada hora (minuto 0 de cada hora)
+    - cron: '0 * * * *'  # Executa a cada hora
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   generate_playlist:
@@ -14,12 +17,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          persist-credentials: true  # necessário para permitir commits
+          persist-credentials: true
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -40,9 +43,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           git add PLAYLIST.m3u
-          
+
           if git diff --cached --quiet; then
             echo "Nenhuma mudança em PLAYLIST.m3u"
           else
