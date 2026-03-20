@@ -23,27 +23,52 @@ jobs:
 
       - name: Download playlist
         run: |
-          wget -O lista.m3u "https://github.com/gratinomaster/JCTV/raw/refs/heads/main/lista1.m3u"
+          wget -q -O lista.m3u "https://github.com/gratinomaster/JCTV/raw/refs/heads/main/lista1.m3u"
 
       - name: Extract channel IDs
         run: |
-          grep -o 'tvg-id="[^"]*"' lista.m3u | sed 's/tvg-id="//;s/"//' | sort -u > canais.txt
-          echo "Canais encontrados:"
-          cat canais.txt
+          grep -o 'tvg-id="[^"]*"' lista.m3u \
+          | sed 's/tvg-id="//;s/"//' \
+          | sort -u > canais.txt
 
-      - name: Download EPG
+      - name: Extract EPG URLs
         run: |
-          wget -O epg.xml "https://url-do-seu-epg.xml"
+          grep -Eo 'https?://[^"]+\.xml(\.gz)?' lista.m3u \
+          | sort -u > epg_urls.txt
 
-      - name: Filter EPG by channels
+      - name: Download and prepare EPGs
         run: |
-          echo "Filtrando EPG..."
+          mkdir epgs
 
-          # Criar arquivo base
+          while read url; do
+            echo "Baixando $url"
+            fname=$(basename "$url")
+
+            wget -q -O "epgs/$fname" "$url" || continue
+
+            if [[ "$fname" == *.gz ]]; then
+              gunzip -f "epgs/$fname"
+            fi
+
+          done < epg_urls.txt
+
+      - name: Merge EPGs
+        run: |
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > epg.xml
+          echo '<tv>' >> epg.xml
+
+          for file in epgs/*.xml; do
+            [ -f "$file" ] || continue
+            sed '1,/<tv>/d' "$file" | sed '/<\/tv>/d' >> epg.xml
+          done
+
+          echo '</tv>' >> epg.xml
+
+      - name: Filter EPG
+        run: |
           echo '<?xml version="1.0" encoding="UTF-8"?>' > LISTA.xml
           echo '<tv>' >> LISTA.xml
 
-          # Adicionar apenas canais presentes
           while read id; do
             xmlstarlet sel -t -c "//channel[@id='$id']" epg.xml >> LISTA.xml
             xmlstarlet sel -t -c "//programme[@channel='$id']" epg.xml >> LISTA.xml
@@ -51,20 +76,19 @@ jobs:
 
           echo '</tv>' >> LISTA.xml
 
-      - name: Compress EPG
+      - name: Compress final EPG
         run: |
           gzip -f LISTA.xml
 
-      - name: Check generated files
+      - name: Cleanup unnecessary files
         run: |
-          echo "Arquivos gerados:"
-          ls -lh
+          rm -rf lista.m3u canais.txt epg_urls.txt epg.xml epgs || true
 
-      - name: Commit files
+      - name: Commit final file only
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          git add LISTA.xml.gz lista.m3u canais.txt || true
-          git commit -m "Atualização automática da lista e EPG filtrado" || echo "Nada para commit"
-          git push origin HEAD || echo "Falha ao dar push"
+          git add LISTA.xml.gz || true
+          git commit -m "EPG filtrado automático" || echo "Nada para commit"
+          git push
