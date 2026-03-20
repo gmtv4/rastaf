@@ -1,5 +1,4 @@
 name: YA CORRIGE LISTA
-
 on:
   workflow_dispatch:
   schedule:
@@ -8,10 +7,8 @@ on:
 jobs:
   opencode:
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -19,91 +16,97 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget gzip xmlstarlet
+          sudo apt-get install -y wget gzip python3
 
       - name: Download playlist
         run: |
           wget -q -O lista.m3u "https://github.com/gratinomaster/1/raw/refs/heads/main/lista1.M3U"
 
-      - name: Extract channel IDs (FIXED)
+      - name: Extract channel IDs
         run: |
-          grep -o 'tvg-id="[^"]*"' lista.m3u \
-          | sed 's/tvg-id="//;s/"//' \
-          | grep -v '^$' \
-          | sort -u > canais.txt
+          grep -o 'tvg-id="[^"]*"' lista.m3u | sed 's/tvg-id="//;s/"//' | grep -v '^$' | sort -u > canais.txt
+          echo "Total de canais únicos: $(wc -l < canais.txt)"
 
-      - name: Extract EPG URLs (FIXED)
+      - name: Extract EPG URLs
         run: |
-          grep -Eo 'https?://[^"]+' lista.m3u \
-          | tr ',' '\n' \
-          | grep -E '\.xml(\.gz)?$' \
-          | sort -u > epg_urls.txt
+          grep -Eo 'https?://[^"]+' lista.m3u | tr ' ' '\n' | tr ',' '\n' | grep -E '\.xml(\.gz)?$' | sort -u > epg_urls.txt
+          echo "EPGs encontrados: $(wc -l < epg_urls.txt)"
 
-          echo "EPGs encontrados:"
-          cat epg_urls.txt
-
-      - name: Download and prepare EPGs
+      - name: Download and Filter EPGs (Optimized)
         run: |
-          mkdir epgs
+          mkdir -p epgs
+          # Criar script Python para filtragem eficiente
+          cat << 'EOF' > filter_epg.py
+          import os
+          import xml.etree.ElementTree as ET
 
-          while read url; do
-            echo "Baixando $url"
+          CANAIS_FILE = "canais.txt"
+          EPGS_DIR = "epgs"
+          OUTPUT_FILE = "LISTA.xml"
 
-            fname=$(basename "$url")
+          with open(CANAIS_FILE, "r") as f:
+              desired_ids = set(line.strip() for line in f if line.strip())
 
-            wget -q -O "epgs/$fname" "$url" || continue
+          print(f"Buscando {len(desired_ids)} canais...")
 
-            if [[ "$fname" == *.gz ]]; then
-              gunzip -f "epgs/$fname"
-            fi
-
-          done < epg_urls.txt
-
-      - name: Merge EPGs (SAFE)
-        run: |
-          echo '<?xml version="1.0" encoding="UTF-8"?>' > epg.xml
-          echo '<tv>' >> epg.xml
-
-          found=0
-
-          for file in epgs/*.xml; do
-            [ -f "$file" ] || continue
-            found=1
-            sed '1,/<tv>/d' "$file" | sed '/<\/tv>/d' >> epg.xml
-          done
-
-          if [ "$found" -eq 0 ]; then
-            echo "Nenhum EPG válido encontrado!"
-            exit 1
-          fi
-
-          echo '</tv>' >> epg.xml
-
-      - name: Filter EPG (SAFE)
-        run: |
-          echo '<?xml version="1.0" encoding="UTF-8"?>' > LISTA.xml
-          echo '<tv>' >> LISTA.xml
-
-          while read id; do
-            xmlstarlet sel -t -c "//channel[@id='$id']" epg.xml >> LISTA.xml 2>/dev/null || true
-            xmlstarlet sel -t -c "//programme[@channel='$id']" epg.xml >> LISTA.xml 2>/dev/null || true
-          done < canais.txt
-
-          echo '</tv>' >> LISTA.xml
+          with open(OUTPUT_FILE, "w", encoding="utf-8") as out:
+              out.write('<?xml version="1.0" encoding="UTF-8"?>\n<tv>\n')
+              found_channels = set()
+              
+              with open("epg_urls.txt", "r") as urls:
+                  for url in urls:
+                      url = url.strip()
+                      if not url: continue
+                      
+                      fname = os.path.basename(url)
+                      fpath = os.path.join(EPGS_DIR, fname)
+                      
+                      print(f"Baixando e processando: {url}")
+                      if os.system(f"wget -q -O '{fpath}' '{url}'") != 0:
+                          print(f"Falha ao baixar {url}")
+                          continue
+                          
+                      if fname.endswith(".gz"):
+                          os.system(f"gunzip -f '{fpath}'")
+                          fpath = fpath[:-3]
+                      
+                      try:
+                          context = ET.iterparse(fpath, events=("start", "end"))
+                          for event, elem in context:
+                              if event == "end":
+                                  if elem.tag == "channel":
+                                      cid = elem.get("id")
+                                      if cid in desired_ids and cid not in found_channels:
+                                          out.write(ET.tostring(elem, encoding="unicode"))
+                                          found_channels.add(cid)
+                                      elem.clear()
+                                  elif elem.tag == "programme":
+                                      cid = elem.get("channel")
+                                      if cid in desired_ids:
+                                          out.write(ET.tostring(elem, encoding="unicode"))
+                                      elem.clear()
+                      except Exception as e:
+                          print(f"Erro no arquivo {fname}: {e}")
+                      
+                      if os.path.exists(fpath): os.remove(fpath)
+              
+              out.write('</tv>\n')
+          EOF
+          
+          python3 filter_epg.py
 
       - name: Compress final EPG
         run: |
           gzip -f LISTA.xml
 
-      - name: Cleanup unnecessary files
+      - name: Cleanup
         run: |
-          rm -rf lista.m3u canais.txt epg_urls.txt epg.xml epgs || true
+          rm -rf lista.m3u canais.txt epg_urls.txt epgs filter_epg.py || true
 
-      - name: Commit final file only
+      - name: Commit final file
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-
           git add LISTA.xml.gz || true
           git commit -m "EPG filtrado automático" || echo "Nada para commit"
           git push
