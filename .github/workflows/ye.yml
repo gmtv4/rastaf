@@ -31,10 +31,15 @@ jobs:
           | sed 's/tvg-id="//;s/"//' \
           | sort -u > canais.txt
 
-      - name: Extract EPG URLs
+      - name: Extract EPG URLs (FIXED)
         run: |
-          grep -Eo 'https?://[^"]+\.xml(\.gz)?' lista.m3u \
+          grep -Eo 'https?://[^"]+' lista.m3u \
+          | tr ',' '\n' \
+          | grep -E '\.xml(\.gz)?$' \
           | sort -u > epg_urls.txt
+
+          echo "EPGs encontrados:"
+          cat epg_urls.txt
 
       - name: Download and prepare EPGs
         run: |
@@ -42,6 +47,7 @@ jobs:
 
           while read url; do
             echo "Baixando $url"
+
             fname=$(basename "$url")
 
             wget -q -O "epgs/$fname" "$url" || continue
@@ -52,15 +58,23 @@ jobs:
 
           done < epg_urls.txt
 
-      - name: Merge EPGs
+      - name: Merge EPGs (SAFE)
         run: |
           echo '<?xml version="1.0" encoding="UTF-8"?>' > epg.xml
           echo '<tv>' >> epg.xml
 
+          found=0
+
           for file in epgs/*.xml; do
             [ -f "$file" ] || continue
+            found=1
             sed '1,/<tv>/d' "$file" | sed '/<\/tv>/d' >> epg.xml
           done
+
+          if [ "$found" -eq 0 ]; then
+            echo "Nenhum EPG válido encontrado!"
+            exit 1
+          fi
 
           echo '</tv>' >> epg.xml
 
