@@ -23,7 +23,8 @@ jobs:
       - name: Install TTS and Audio Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget gzip ffmpeg
+          # Instalar espeak-ng (necessário para o Piper processar fonemas) e ffmpeg
+          sudo apt-get install -y wget gzip ffmpeg espeak-ng espeak-ng-data
           
           # Instalar Piper TTS
           PIPER_VER="1.2.0"
@@ -38,7 +39,7 @@ jobs:
           wget -q -O tts_models/pt_BR-cadu-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx
           wget -q -O tts_models/pt_BR-cadu-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx.json
           
-          echo "Piper TTS e FFmpeg instalados com sucesso."
+          echo "Piper TTS, espeak-ng e FFmpeg instalados com sucesso."
 
       - name: Install OpenCode
         run: |
@@ -47,8 +48,8 @@ jobs:
 
       - name: Run OpenCode and save output
         run: |
-          # Adicionamos uma instrução extra ao prompt para o OpenCode saber que o Piper está disponível localmente
-          SYSTEM_PROMPT="IMPORTANTE: O Piper TTS está instalado localmente. Para gerar áudio em português do Brasil, use o comando: echo 'TEXTO' | piper --model tts_models/pt_BR-cadu-medium.onnx --output_file audio.wav. Para converter para mp3, use: ffmpeg -i audio.wav audio.mp3. "
+          # Instrução detalhada para o OpenCode usar o Piper com as dependências locais
+          SYSTEM_PROMPT="O Piper TTS está instalado localmente e depende do espeak-ng (já instalado). Para gerar áudio em português do Brasil, use: echo 'TEXTO' | piper --model tts_models/pt_BR-cadu-medium.onnx --output_file audio.wav. Em seguida, use ffmpeg -i audio.wav audio.mp3 para converter. "
           opencode run "$SYSTEM_PROMPT ${{ github.event.inputs.prompt }}" > "${{ github.event.inputs.filename }}"
 
       - name: Commit generated files safely
