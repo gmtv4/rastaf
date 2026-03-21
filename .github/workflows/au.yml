@@ -73,8 +73,9 @@ jobs:
                       else:
                           os.system("pdftotext book.pdf raw_text.txt")
                           print("Texto extraído do PDF completo.")
-                      with open("raw_text.txt", "r", encoding="utf-8") as f:
-                          content = f.read()
+                      if os.path.exists("raw_text.txt"):
+                          with open("raw_text.txt", "r", encoding="utf-8") as f:
+                              content = f.read()
           
           if not content:
               print("Erro ao obter conteúdo do livro.")
@@ -111,26 +112,42 @@ jobs:
           import re
           import time
 
-          VOICES = [
-              "pt_PT-cadu-medium",
-              "pt_PT-faber-medium",
-              "pt_PT-jeff-medium",
-              "pt_PT-jeff2-medium",
-              "pt_PT-tugao-medium"
+          # Lista de vozes pt_PT (Portugal)
+          # Formato: (nome_da_voz, qualidade)
+          VOICES_CONFIG = [
+              ("cadu", "medium"),
+              ("faber", "medium"),
+              ("jeff", "medium"),
+              ("jeff2", "medium"),
+              ("tugao", "medium")
           ]
 
           def download_voices():
               os.makedirs("tts_models", exist_ok=True)
-              base_url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT"
-              for voice in VOICES:
-                  name = voice.split("-")[1]
-                  quality = voice.split("-")[2]
+              # URL base correta do Hugging Face para vozes Piper
+              base_url = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_PT"
+              
+              for name, quality in VOICES_CONFIG:
+                  voice_id = f"pt_PT-{name}-{quality}"
                   onnx_url = f"{base_url}/{name}/{quality}/pt_PT-{name}-{quality}.onnx"
-                  onnx_path = f"tts_models/{voice}.onnx"
+                  onnx_path = f"tts_models/{voice_id}.onnx"
+                  
                   if not os.path.exists(onnx_path):
-                      print(f"Baixando voz: {voice}...")
-                      subprocess.run(["wget", "-q", "-O", onnx_path, onnx_url], check=True)
-                      subprocess.run(["wget", "-q", "-O", f"{onnx_path}.json", f"{onnx_url}.json"], check=True)
+                      print(f"Baixando voz: {voice_id}...")
+                      # Tentar baixar ONNX
+                      r = subprocess.run(["wget", "-q", "-O", onnx_path, onnx_url])
+                      if r.returncode != 0:
+                          print(f"Erro ao baixar {onnx_url}. Tentando URL alternativa...")
+                          # Tentar URL sem a versão v1.0.0 se falhar
+                          alt_url = f"https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/{name}/{quality}/pt_PT-{name}-{quality}.onnx"
+                          subprocess.run(["wget", "-q", "-O", onnx_path, alt_url], check=True)
+                          subprocess.run(["wget", "-q", "-O", f"{onnx_path}.json", f"{alt_url}.json"], check=True)
+                      else:
+                          subprocess.run(["wget", "-q", "-O", f"{onnx_path}.json", f"{onnx_url}.json"], check=True)
+
+          if not os.path.exists("final_text.txt"):
+              print("Arquivo final_text.txt não encontrado.")
+              sys.exit(1)
 
           with open("final_text.txt", "r", encoding="utf-8") as f:
               text = re.sub(r'\s+', ' ', f.read()).strip()
@@ -149,12 +166,13 @@ jobs:
           
           for i in range(0, min(total_words, words_per_chunk * max_chunks), words_per_chunk):
               chunk_text = " ".join(words[i:i + words_per_chunk])
-              voice = VOICES[(i // words_per_chunk) % len(VOICES)]
+              voice_info = VOICES_CONFIG[(i // words_per_chunk) % len(VOICES_CONFIG)]
+              voice_id = f"pt_PT-{voice_info[0]}-{voice_info[1]}"
               output_wav = f"chunks/chunk_{i:06d}.wav"
               
-              print(f"Gerando bloco {i//words_per_chunk + 1} com voz {voice}...")
+              print(f"Gerando bloco {i//words_per_chunk + 1} com voz {voice_id}...")
               process = subprocess.Popen(
-                  ["piper", "--model", f"tts_models/{voice}.onnx", "--output_file", output_wav],
+                  ["piper", "--model", f"tts_models/{voice_id}.onnx", "--output_file", output_wav],
                   stdin=subprocess.PIPE, text=True
               )
               process.communicate(input=chunk_text)
