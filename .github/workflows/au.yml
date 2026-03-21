@@ -110,26 +110,31 @@ jobs:
           import os
           import subprocess
           import re
-          import time
+          import sys
 
-          # Lista de vozes pt_PT (Portugal)
-          # Formato: (nome_da_voz, qualidade)
+          # Configuração das vozes com seus respectivos caminhos no Hugging Face
+          # Cadu, Faber, Jeff, Jeff2 estão em pt_BR
+          # Tugao está em pt_PT
           VOICES_CONFIG = [
-              ("cadu", "medium"),
-              ("faber", "medium"),
-              ("jeff", "medium"),
-              ("jeff2", "medium"),
-              ("tugao", "medium")
+              {"name": "cadu", "quality": "medium", "lang": "pt_BR"},
+              {"name": "faber", "quality": "medium", "lang": "pt_BR"},
+              {"name": "jeff", "quality": "medium", "lang": "pt_BR"},
+              {"name": "jeff2", "quality": "medium", "lang": "pt_BR"},
+              {"name": "tugao", "quality": "medium", "lang": "pt_PT"}
           ]
 
           def download_voices():
               os.makedirs("tts_models", exist_ok=True)
-              # URL base correta do Hugging Face para vozes Piper
-              base_url = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_PT"
+              base_url = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt"
               
-              for name, quality in VOICES_CONFIG:
-                  voice_id = f"pt_PT-{name}-{quality}"
-                  onnx_url = f"{base_url}/{name}/{quality}/pt_PT-{name}-{quality}.onnx"
+              for voice in VOICES_CONFIG:
+                  name = voice["name"]
+                  quality = voice["quality"]
+                  lang = voice["lang"]
+                  
+                  # Construir URL correta baseada na linguagem (pt_BR ou pt_PT)
+                  voice_id = f"{lang.replace('_', '-')}-{name}-{quality}"
+                  onnx_url = f"{base_url}/{lang}/{name}/{quality}/{lang.replace('_', '-')}-{name}-{quality}.onnx"
                   onnx_path = f"tts_models/{voice_id}.onnx"
                   
                   if not os.path.exists(onnx_path):
@@ -137,9 +142,9 @@ jobs:
                       # Tentar baixar ONNX
                       r = subprocess.run(["wget", "-q", "-O", onnx_path, onnx_url])
                       if r.returncode != 0:
-                          print(f"Erro ao baixar {onnx_url}. Tentando URL alternativa...")
-                          # Tentar URL sem a versão v1.0.0 se falhar
-                          alt_url = f"https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/{name}/{quality}/pt_PT-{name}-{quality}.onnx"
+                          print(f"Erro ao baixar {onnx_url}. Verificando caminho alternativo...")
+                          # Fallback para URL sem v1.0.0
+                          alt_url = f"https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/{lang}/{name}/{quality}/{lang.replace('_', '-')}-{name}-{quality}.onnx"
                           subprocess.run(["wget", "-q", "-O", onnx_path, alt_url], check=True)
                           subprocess.run(["wget", "-q", "-O", f"{onnx_path}.json", f"{alt_url}.json"], check=True)
                       else:
@@ -167,7 +172,7 @@ jobs:
           for i in range(0, min(total_words, words_per_chunk * max_chunks), words_per_chunk):
               chunk_text = " ".join(words[i:i + words_per_chunk])
               voice_info = VOICES_CONFIG[(i // words_per_chunk) % len(VOICES_CONFIG)]
-              voice_id = f"pt_PT-{voice_info[0]}-{voice_info[1]}"
+              voice_id = f"{voice_info['lang'].replace('_', '-')}-{voice_info['name']}-{voice_info['quality']}"
               output_wav = f"chunks/chunk_{i:06d}.wav"
               
               print(f"Gerando bloco {i//words_per_chunk + 1} com voz {voice_id}...")
