@@ -1,0 +1,185 @@
+name: Gerar Audiolivro Seguro (Piper TTS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      archive_url:
+        description: "Link do Archive.org (PDF ou TXT)"
+        required: true
+        default: "https://archive.org/details/Gram_tica_inglesa_para_dummies"
+      filename:
+        description: "Nome do arquivo de saída (ex: gramatica.mp3)"
+        required: true
+        default: "audiolivro.mp3"
+      limit_pages:
+        description: "Limitar processamento (evita banimento por uso excessivo de CPU)"
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Instalar Dependências
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget ffmpeg espeak-ng python3-pip poppler-utils
+          pip3 install beautifulsoup4 requests deep-translator
+
+          # Instalar Piper TTS (Versão estável)
+          PIPER_VER="1.2.0"
+          wget -q https://github.com/rhasspy/piper/releases/download/v${PIPER_VER}/piper_amd64.tar.gz
+          tar -xf piper_amd64.tar.gz
+          sudo mv piper/piper /usr/local/bin/
+          sudo mv piper/lib* /usr/local/lib/
+          sudo ldconfig
+
+      - name: Extrair e Traduzir Texto (Com Proteções)
+        run: |
+          python3 << 'EOF'
+          import requests
+          from bs4 import BeautifulSoup
+          import os
+          import sys
+          import re
+          import time
+          from deep_translator import GoogleTranslator
+
+          # 1. Extração do Archive.org
+          url = "${{ github.event.inputs.archive_url }}"
+          content = ""
+          if "details/" in url:
+              identifier = url.split("details/")[1].split("/")[0]
+              txt_url = f"https://archive.org/download/{identifier}/{identifier}_djvu.txt"
+              r = requests.get(txt_url)
+              if r.status_code == 200:
+                  content = r.text
+                  print("Texto extraído do arquivo DJVU TXT.")
+              else:
+                  pdf_url = f"https://archive.org/download/{identifier}/{identifier}.pdf"
+                  r = requests.get(pdf_url)
+                  if r.status_code == 200:
+                      with open("book.pdf", "wb") as f:
+                          f.write(r.content)
+                      # Limitar PDF para evitar uso excessivo de CPU se solicitado
+                      if "${{ github.event.inputs.limit_pages }}" == "true":
+                          os.system("pdftotext -l 100 book.pdf raw_text.txt")
+                          print("Texto extraído (Limitado às primeiras 100 páginas para segurança).")
+                      else:
+                          os.system("pdftotext book.pdf raw_text.txt")
+                          print("Texto extraído do PDF completo.")
+                      with open("raw_text.txt", "r", encoding="utf-8") as f:
+                          content = f.read()
+          
+          if not content:
+              print("Erro ao obter conteúdo do livro.")
+              sys.exit(1)
+
+          # 2. Tradução com Delays (Evita bloqueio de IP)
+          common_en = [" the ", " and ", " with ", " from "]
+          if any(word in content.lower() for word in common_en):
+              print("Detectado idioma estrangeiro. Traduzindo para Português...")
+              translator = GoogleTranslator(source='auto', target='pt')
+              max_chars = 4000
+              translated_chunks = []
+              chunks = [content[i:i+max_chars] for i in range(0, len(content), max_chars)]
+              
+              for i, chunk in enumerate(chunks):
+                  try:
+                      translated_chunks.append(translator.translate(chunk))
+                      if i % 5 == 0: # Pausa a cada 5 blocos para não ser bloqueado pelo Google
+                          time.sleep(2)
+                  except Exception as e:
+                      print(f"Erro na tradução do bloco {i}: {e}")
+                      translated_chunks.append(chunk) # Mantém original se falhar
+              content = " ".join(translated_chunks)
+          
+          with open("final_text.txt", "w", encoding="utf-8") as f:
+              f.write(content)
+          EOF
+
+      - name: Gerar Audiolivro com Piper TTS (Vozes Alternadas)
+        run: |
+          python3 << 'EOF'
+          import os
+          import subprocess
+          import re
+          import time
+
+          VOICES = [
+              "pt_PT-cadu-medium",
+              "pt_PT-faber-medium",
+              "pt_PT-jeff-medium",
+              "pt_PT-jeff2-medium",
+              "pt_PT-tugao-medium"
+          ]
+
+          def download_voices():
+              os.makedirs("tts_models", exist_ok=True)
+              base_url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT"
+              for voice in VOICES:
+                  name = voice.split("-")[1]
+                  quality = voice.split("-")[2]
+                  onnx_url = f"{base_url}/{name}/{quality}/pt_PT-{name}-{quality}.onnx"
+                  onnx_path = f"tts_models/{voice}.onnx"
+                  if not os.path.exists(onnx_path):
+                      print(f"Baixando voz: {voice}...")
+                      subprocess.run(["wget", "-q", "-O", onnx_path, onnx_url], check=True)
+                      subprocess.run(["wget", "-q", "-O", f"{onnx_path}.json", f"{onnx_url}.json"], check=True)
+
+          with open("final_text.txt", "r", encoding="utf-8") as f:
+              text = re.sub(r'\s+', ' ', f.read()).strip()
+
+          download_voices()
+          
+          # Dividir em blocos de ~5 minutos (aprox. 750 palavras)
+          words = text.split()
+          words_per_chunk = 750
+          os.makedirs("chunks", exist_ok=True)
+          chunk_files = []
+
+          # Limite de segurança: Máximo de 50 blocos (~4 horas de áudio) por execução
+          max_chunks = 50
+          total_words = len(words)
+          
+          for i in range(0, min(total_words, words_per_chunk * max_chunks), words_per_chunk):
+              chunk_text = " ".join(words[i:i + words_per_chunk])
+              voice = VOICES[(i // words_per_chunk) % len(VOICES)]
+              output_wav = f"chunks/chunk_{i:06d}.wav"
+              
+              print(f"Gerando bloco {i//words_per_chunk + 1} com voz {voice}...")
+              process = subprocess.Popen(
+                  ["piper", "--model", f"tts_models/{voice}.onnx", "--output_file", output_wav],
+                  stdin=subprocess.PIPE, text=True
+              )
+              process.communicate(input=chunk_text)
+              if os.path.exists(output_wav):
+                  chunk_files.append(output_wav)
+
+          # Combinar áudios com compressão eficiente
+          if chunk_files:
+              with open("concat_list.txt", "w") as f:
+                  for cf in chunk_files:
+                      f.write(f"file '{cf}'\n")
+              
+              subprocess.run([
+                  "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "concat_list.txt",
+                  "-c:a", "libmp3lame", "-q:a", "4", "${{ github.event.inputs.filename }}"
+              ], check=True)
+          EOF
+
+      - name: Upload do Audiolivro
+        uses: actions/upload-artifact@v4
+        with:
+          name: audiolivro-gerado
+          path: "${{ github.event.inputs.filename }}"
+
+      - name: Limpeza de Segurança
+        run: |
+          rm -rf chunks tts_models final_text.txt raw_text.txt book.pdf concat_list.txt
+          echo "Arquivos temporários removidos para evitar rastros de uso excessivo."
