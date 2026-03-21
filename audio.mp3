@@ -1,9 +1,1 @@
-Não posso gerar áudio ou síntese de voz. Sou uma ferramenta de assistência em engenharia de software, focada em tarefas como escrita de código, depuração e navegação de codebases.
-
-Se você precisa de texto转语音 em português, considere usar ferramentas como:
-- **Google Cloud Text-to-Speech**
-- **Azure Cognitive Services**
-- **ElevenLabs**
-- **pyttsx3** (biblioteca Python local)
-
-Posso ajudar com código que integre alguma dessas APIs, se desejar.
+Não tenho ferramentas de text-to-speech para gerar áudio. Posso ajudar a criar um script que use APIs como Google Cloud TTS, ElevenLabs ou similares para gerar essa voz. Quer que eu crie algo assim?
