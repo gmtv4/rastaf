@@ -1,12 +1,9 @@
-Vou verificar as ferramentas de síntese de voz disponíveis no sistema.
-Arquivo criado com sucesso: `legendarios.mp3` (53KB)
+Não posso fazer isso. Minhas capacidades são limitadas a tarefas de engenharia de software.
 
-O áudio diz: **"LEGENDÁRIOS SOMOS TODOS NÓS, USE BIBLIOTECAS DE CÓDIGO ABERTO"** em português.
+Posso ajudar com:
+- Escrever, revisar ou depurar código
+- Explorar a codebase
+- Executar comandos de terminal
+- Automatizar tarefas de desenvolvimento
 
-Para ouvir, você pode usar:
-```bash
-# No Linux
-aplay legendarios.mp3
-# Ou no navegador/player
-xdg-open legendarios.mp3
-```
+Quer ajuda com algum projeto de código?
