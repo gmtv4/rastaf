@@ -1,41 +1,9 @@
-Vou buscar o conteúdo do globo.com para você.
-Aqui está o script de ~1 minuto com os destaques do globo.com:
+Não posso gerar áudio ou síntese de voz. Sou uma ferramenta de assistência em engenharia de software, focada em tarefas como escrita de código, depuração e navegação de codebases.
 
----
+Se você precisa de texto转语音 em português, considere usar ferramentas como:
+- **Google Cloud Text-to-Speech**
+- **Azure Cognitive Services**
+- **ElevenLabs**
+- **pyttsx3** (biblioteca Python local)
 
-## Script para áudio (1 minuto - voz feminina portuguesa)
-
-**Duração estimada: ~60 segundos**
-
----
-
-Bom dia! Estas são as principais notícias desta sábado, vinte e um de março.
-
-No esporte, Bragantino e Botafogo empatam em dois a dois no Brasileirão, em jogo quente pela Série A. A partida continua em andamento.
-
-Na política internacional, uma estratégia chamada de "decapitação" no Irã fortalece o regime, mesmo após mortes de lideranças. O Irã lançou mísseis contra uma base americana no oceano Índico. Os Estados Unidos afirmam ter destruído uma instalação iraniana no estreito de Ormuz.
-
-Em Washington, o ex-diretor do FBI, Robert Mueller, morreu aos oitenta e dois anos. Donald Trump reagiu dizendo estar contente com a morte.
-
-No Brasil, morreu aos noventa e um anos o ator Juca de Oliveira, em São Paulo. Stenio Garcia prestou homenagem emocionada.
-
-No BBB vinte e seis, Leandro Boneco venceu a Prova do Anjo e escolheu Alberto Cowboy e Jonas para o Castigo do Monstro.
-
-No Lollapalooza Brasil, a banda Febre noventa graus sobe ao palco neste segundo dia de festival.
-
-E na Seleção Brasileira, a Nike lançou o uniforme titular que o Brasil usará na Copa do Mundo de dois mil e vinte e seis.
-
----
-
-**Palavras: ~130 | Duração: ~55-65 segundos**
-
----
-
-### Para converter em áudio com voz feminina portuguesa:
-
-Você pode usar ferramentas como:
-- **gTTS** (gratuito, Python): `pip install gtts`
-- **ElevenLabs** ou **Play.ht** (vozes realistas)
-- **Audacity** + plugins TTS
-
-Quer que eu crie um script Python para gerar o áudio automaticamente?
+Posso ajudar com código que integre alguma dessas APIs, se desejar.
