@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       prompt:
-        description: "O que você quer gerar (ex: script que cria audio.mp3)"
+        description: "O que você quer gerar"
         required: true
       filename:
-        description: "Nome do arquivo de saída principal (opcional)"
-        required: false
+        description: "Nome do arquivo de saída (ex: lista.m3u)"
+        required: true
 
 jobs:
   opencode:
@@ -21,83 +21,43 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # importante para rebase
 
       - name: Install OpenCode
         run: |
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> $GITHUB_PATH
 
-      # ----------------------------
-      # Gera script puro com opencode
-      # ----------------------------
-      - name: Generate script with OpenCode
+      - name: Run OpenCode and save output
         run: |
-          opencode run "${{ github.event.inputs.prompt }}" > script.sh
+          opencode run "${{ github.event.inputs.prompt }}" > "${{ github.event.inputs.filename }}"
 
-      # ----------------------------
-      # Corrige quebras de linha e aspas
-      # ----------------------------
-      - name: Fix script formatting
+      # ------------------------
+      # Debug: lista arquivos gerados
+      # ------------------------
+      - name: List files generated
         run: |
-          # remove CR no fim de linha
-          sed -i 's/\r$//' script.sh
-          # remove crases ou markdown, se houver
-          sed -i '/^```/d' script.sh
-
-      # ----------------------------
-      # Debug do script gerado
-      # ----------------------------
-      - name: Show generated script
-        run: |
-          echo "===== SCRIPT GERADO ====="
-          cat -n script.sh
-
-      # ----------------------------
-      # Executa script de forma segura
-      # ----------------------------
-      - name: Run generated script safely
-        run: |
-          chmod +x script.sh
-          bash script.sh || {
-            echo "❌ Script falhou. Conteúdo abaixo:"
-            cat script.sh
-            exit 1
-          }
-
-      # ----------------------------
-      # Lista arquivos gerados
-      # ----------------------------
-      - name: List generated files
-        run: |
-          echo "Arquivos encontrados:"
+          echo "Arquivos gerados pelo OpenCode:"
           find . -type f
 
-      # ----------------------------
-      # Move arquivos de áudio para raiz
-      # ----------------------------
-      - name: Collect media files
+      # ------------------------
+      # Move qualquer mp3 criado para a raiz
+      # ------------------------
+      - name: Collect audio files
         run: |
-          find . -type f \( -iname "*.mp3" -o -iname "*.wav" -o -iname "*.m4a" \) -exec mv {} . \; 2>/dev/null || true
+          find . -type f -iname "*.mp3" -exec mv {} . \; 2>/dev/null || true
 
-      # ----------------------------
-      # Debug final
-      # ----------------------------
-      - name: Final file list
-        run: |
-          echo "Arquivos finais:"
-          find . -type f
-
-      # ----------------------------
-      # Commit de tudo
-      # ----------------------------
+      # ------------------------
+      # Commit dos arquivos gerados
+      # ------------------------
       - name: Commit generated files safely
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          git add .
-          git commit -m "Arquivos gerados dinamicamente" || echo "Nada para commit"
+          # adiciona .txt, .m3u e .mp3
+          git add *.txt *.m3u *.mp3 || true
+          git commit -m "Adiciona arquivos gerados" || echo "Nada para commit"
 
           # sincroniza antes de enviar
           for i in 1 2 3; do
