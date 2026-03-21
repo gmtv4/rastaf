@@ -1,66 +1,57 @@
-name: Run OpenCode Audiobook
+name: Generate Audiobook
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
-    inputs:
-      pergunta:
-        description: "Pergunta para o OpenCode"
-        required: true
-        default: "preciso de um audiolivro com base nisso https://archive.org/details/Gram_tica_inglesa_para_dummies caso esteja em outro idioma, traduza para portugues, com leitura com voz em portugues com sotaque de portugal, preciso de voz natural, não robotica, não quero voz da microsoft nem voz do google, use Piper TTS alterne entre cadu, faber, jeff, jeff2 e tugao, a cada 5 minutos de audio,uma voz é trocada"
 
 jobs:
-  run-opencode:
+  audiobook:
     runs-on: ubuntu-latest
 
-    concurrency:
-      group: opencode-job
-      cancel-in-progress: false
-
     steps:
-      - name: Checkout repositório
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
-      - name: Configurar Git
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências do sistema (ffmpeg)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Instalar dependências Python
+        run: |
+          pip install --upgrade pip
+          pip install piper-tts pathvalidate pydub soundfile
+
+      - name: Rodar geração do audiobook
+        run: |
+          python generate_audiobook.py
+
+      - name: Listar arquivos gerados
+        run: ls -lh audiobook_output/
+
+      - name: Copiar arquivo final
+        run: |
+          cp audiobook_output/*.wav .
+
+      - name: Commit e push
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
 
-      - name: Instalar OpenCode
-        run: |
-          curl -fsSL https://opencode.ai/install | bash
-          echo "/home/runner/.opencode/bin" >> $GITHUB_PATH
+          git add *.wav || true
+          git commit -m "Add audiobook gerado" || echo "Nada para commit"
 
-      - name: Verificar instalação
-        run: opencode --version
-
-      - name: Definir pergunta
-        id: vars
-        run: |
-          if [ -n "${{ github.event.inputs.pergunta }}" ]; then
-            echo "PERGUNTA=${{ github.event.inputs.pergunta }}" >> $GITHUB_ENV
-          else
-            echo "PERGUNTA=preciso de um audiolivro com base nisso https://archive.org/details/Gram_tica_inglesa_para_dummies caso esteja em outro idioma, traduza para portugues, com leitura com voz em portugues com sotaque de portugal, preciso de voz natural, não robotica, não quero voz da microsoft nem voz do google, use Piper TTS alterne entre cadu, faber, jeff, jeff2 e tugao, a cada 5 minutos de audio,uma voz é trocada" >> $GITHUB_ENV
-          fi
-
-      - name: Executar OpenCode
-        run: |
-          echo "Pergunta: $PERGUNTA"
-          opencode run "$PERGUNTA" > output.txt
-
-      - name: Commit resultado
-        run: |
-          git add output.txt || true
-          git commit -m "Atualiza output OpenCode" || echo "Nada para commit"
-
-      - name: Push com retry (resolve conflitos)
+      - name: Push com retry
         run: |
           for i in {1..5}; do
             git pull --rebase origin main && \
             git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git main && break
-            echo "Tentativa $i falhou, retry..."
+            echo "Retry $i..."
             sleep 5
           done
