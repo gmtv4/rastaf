@@ -1,5 +1,4 @@
 name: ya
-
 on:
   workflow_dispatch:
     inputs:
@@ -21,6 +20,26 @@ jobs:
         with:
           fetch-depth: 0 # importante para rebase
 
+      - name: Install TTS Libraries (Piper PT-BR)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gzip
+          
+          # Instalar Piper TTS (binário oficial)
+          PIPER_VER="1.2.0"
+          wget -q https://github.com/rhasspy/piper/releases/download/v${PIPER_VER}/piper_amd64.tar.gz
+          tar -xf piper_amd64.tar.gz
+          sudo mv piper/piper /usr/local/bin/
+          sudo mv piper/lib* /usr/local/lib/
+          sudo ldconfig
+          
+          # Baixar voz em Português do Brasil (Voz "Cadu" - Qualidade Média)
+          mkdir -p tts_models
+          wget -q -O tts_models/pt_BR-cadu-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx
+          wget -q -O tts_models/pt_BR-cadu-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx.json
+          
+          echo "Piper TTS instalado com sucesso. Voz pt_BR-cadu-medium pronta."
+
       - name: Install OpenCode
         run: |
           curl -fsSL https://opencode.ai/install | bash
@@ -36,7 +55,7 @@ jobs:
           git config --global user.email "github-actions@github.com"
           
           # Adiciona arquivos se existirem
-          files_to_add=$(ls *.m3u *.txt *.mp3 *.mp4 2>/dev/null || true)
+          files_to_add=$(ls *.m3u *.txt *.mp3 *.mp4 *.wav 2>/dev/null || true)
           
           if [ -n "$files_to_add" ]; then
             git add $files_to_add
@@ -46,7 +65,7 @@ jobs:
             for i in 1 2 3; do
               git pull --rebase origin ${{ github.ref_name }} && break || sleep 2
             done
-
+            
             # Push com retry
             for i in 1 2 3; do
               git push origin HEAD:${{ github.ref_name }} && break || sleep 2
