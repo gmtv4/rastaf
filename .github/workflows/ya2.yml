@@ -7,8 +7,8 @@ on:
         description: "O que você quer gerar"
         required: true
       filename:
-        description: "Arquivo de saída principal (ex: lista.txt)"
-        required: true
+        description: "Arquivo de saída principal (opcional)"
+        required: false
 
 jobs:
   opencode:
@@ -28,44 +28,53 @@ jobs:
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> $GITHUB_PATH
 
-      - name: Run OpenCode
+      # 🔥 Gera script em vez de só texto
+      - name: Generate script with OpenCode
         run: |
-          opencode run "${{ github.event.inputs.prompt }}" > "${{ github.event.inputs.filename }}"
+          opencode run "${{ github.event.inputs.prompt }}" > script.sh
 
-      # 🔍 DEBUG — ver tudo que foi criado
+      # 🔍 Debug do script gerado
+      - name: Show generated script
+        run: |
+          echo "===== SCRIPT GERADO ====="
+          cat script.sh
+
+      # 🚀 Executa o que o opencode criou
+      - name: Run generated script
+        run: |
+          chmod +x script.sh
+          bash script.sh
+
+      # 🔍 Ver tudo que foi criado
       - name: List generated files
         run: |
-          echo "Arquivos no workspace:"
+          echo "Arquivos encontrados:"
           find . -type f
 
-      # 📦 GARANTE que qualquer áudio venha pra raiz do repo
+      # 📦 Move mídias pra raiz
       - name: Collect media files
         run: |
-          echo "Movendo arquivos de mídia para raiz..."
           find . -type f \( -iname "*.mp3" -o -iname "*.wav" -o -iname "*.m4a" \) -exec mv {} . \; 2>/dev/null || true
 
-      # 🔍 DEBUG depois de mover
-      - name: List files after move
+      # 🔍 Debug final
+      - name: Final file list
         run: |
-          echo "Arquivos após organização:"
+          echo "Arquivos finais:"
           find . -type f
 
+      # 💾 Commit de tudo
       - name: Commit generated files safely
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          # adiciona TUDO (não perde mais mp3)
           git add .
+          git commit -m "Arquivos gerados dinamicamente" || echo "Nada para commit"
 
-          git commit -m "Arquivos gerados via OpenCode" || echo "Nada para commit"
-
-          # sincroniza antes de enviar
           for i in 1 2 3; do
             git pull --rebase origin ${{ github.ref_name }} && break || sleep 2
           done
 
-          # push com retry
           for i in 1 2 3; do
             git push origin HEAD:${{ github.ref_name }} && break || sleep 2
           done
