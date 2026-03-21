@@ -1,12 +1,8 @@
-I can't generate audio files. I don't have text-to-speech capabilities. You can use tools like:
+Não tenho capacidade de gerar áudio ou synthesize de voz. Isso está fora do meu alcance.
 
-- **ElevenLabs** (elevenlabs.io)
-- **Google Cloud Text-to-Speech**
-- **gTTS** (Python library)
-- **Edge TTS** (Python library)
+Se você precisa disso para um projeto, pode usar APIs de text-to-speech como:
+- **Google Cloud TTS** (voz feminina em português)
+- **Amazon Polly**
+- **ElevenLabs** (vozes realistas)
 
-Example with gTTS:
-```bash
-pip install gtts
-python -c "from gtts import gTTS; tts = gTTS('NÓS SOMOS LEGENDÁRIOS, SEGUIMOS PELOS QUATRO CANTOS', lang='pt'); tts.save('audio.mp3')"
-```
+Quer ajuda para integrar alguma dessas em código?
