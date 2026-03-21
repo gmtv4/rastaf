@@ -7,7 +7,7 @@ on:
         description: "O que você quer gerar"
         required: true
       filename:
-        description: "Nome base do arquivo (sem extensão)"
+        description: "Arquivo de saída principal (ex: lista.txt)"
         required: true
 
 jobs:
@@ -28,37 +28,44 @@ jobs:
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> $GITHUB_PATH
 
-      - name: Generate text with OpenCode
+      - name: Run OpenCode
         run: |
-          opencode run "${{ github.event.inputs.prompt }}" > texto.txt
+          opencode run "${{ github.event.inputs.prompt }}" > "${{ github.event.inputs.filename }}"
 
-      - name: Install TTS (gTTS)
-        run: pip install gtts
-
-      - name: Convert text to MP3
+      # 🔍 DEBUG — ver tudo que foi criado
+      - name: List generated files
         run: |
-          python - <<EOF
-from gtts import gTTS
+          echo "Arquivos no workspace:"
+          find . -type f
 
-with open("texto.txt", "r") as f:
-    text = f.read()
+      # 📦 GARANTE que qualquer áudio venha pra raiz do repo
+      - name: Collect media files
+        run: |
+          echo "Movendo arquivos de mídia para raiz..."
+          find . -type f \( -iname "*.mp3" -o -iname "*.wav" -o -iname "*.m4a" \) -exec mv {} . \; 2>/dev/null || true
 
-tts = gTTS(text=text, lang="pt")
-tts.save("${{ github.event.inputs.filename }}.mp3")
-EOF
+      # 🔍 DEBUG depois de mover
+      - name: List files after move
+        run: |
+          echo "Arquivos após organização:"
+          find . -type f
 
       - name: Commit generated files safely
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          git add *.txt *.mp3 || true
-          git commit -m "Adiciona audiolivro gerado" || echo "Nada para commit"
+          # adiciona TUDO (não perde mais mp3)
+          git add .
 
+          git commit -m "Arquivos gerados via OpenCode" || echo "Nada para commit"
+
+          # sincroniza antes de enviar
           for i in 1 2 3; do
             git pull --rebase origin ${{ github.ref_name }} && break || sleep 2
           done
 
+          # push com retry
           for i in 1 2 3; do
             git push origin HEAD:${{ github.ref_name }} && break || sleep 2
           done
