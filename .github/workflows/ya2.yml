@@ -20,11 +20,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install TTS and Audio Tools
+      - name: Install TTS, Audio and Grammar Tools
         run: |
           sudo apt-get update
-          # Instalar espeak-ng (necessário para o Piper processar fonemas) e ffmpeg
-          sudo apt-get install -y wget gzip ffmpeg espeak-ng espeak-ng-data
+          # Instalar Java (necessário para o LanguageTool), espeak-ng e ffmpeg
+          sudo apt-get install -y wget gzip ffmpeg espeak-ng espeak-ng-data default-jre python3-pip
+          
+          # Instalar bibliotecas Python para correção e normalização
+          pip3 install num2words language-tool-python
           
           # Instalar Piper TTS
           PIPER_VER="1.2.0"
@@ -39,7 +42,49 @@ jobs:
           wget -q -O tts_models/pt_BR-cadu-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx
           wget -q -O tts_models/pt_BR-cadu-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx.json
           
-          echo "Piper TTS, espeak-ng e FFmpeg instalados com sucesso."
+          # Criar script de correção gramatical e normalização avançada
+          cat << 'EOF' > fix_and_normalize.py
+          import sys
+          import re
+          import language_tool_python
+          from num2words import num2words
+
+          def fix_grammar(text):
+              tool = language_tool_python.LanguageTool('pt-BR')
+              matches = tool.check(text)
+              return language_tool_python.utils.correct(text, matches)
+
+          def normalize_for_tts(text):
+              # Converter números para extenso
+              def replace_num(match):
+                  try:
+                      return num2words(int(match.group()), lang='pt_BR')
+                  except:
+                      return match.group()
+              
+              text = re.sub(r'\b\d+\b', replace_num, text)
+              
+              # Correções de pronúncia e siglas
+              text = text.replace("RTVE", "R T V E")
+              text = text.replace("G7", "G sete")
+              text = text.replace("km/h", "quilômetros por hora")
+              
+              # Garantir pausas em listas e pontos
+              text = text.replace(". ", ". ... ")
+              text = text.replace(", ", ", ... ")
+              
+              return text
+
+          if __name__ == "__main__":
+              raw_text = sys.stdin.read()
+              # 1. Corrigir gramática e sintaxe
+              corrected_text = fix_grammar(raw_text)
+              # 2. Normalizar para leitura fluida
+              final_text = normalize_for_tts(corrected_text)
+              print(final_text)
+          EOF
+
+          echo "Ambiente configurado com LanguageTool (Gramática) e Piper TTS."
 
       - name: Install OpenCode
         run: |
@@ -48,8 +93,8 @@ jobs:
 
       - name: Run OpenCode and save output
         run: |
-          # Instrução detalhada para o OpenCode usar o Piper com as dependências locais
-          SYSTEM_PROMPT="O Piper TTS está instalado localmente e depende do espeak-ng (já instalado). Para gerar áudio em português do Brasil, use: echo 'TEXTO' | piper --model tts_models/pt_BR-cadu-medium.onnx --output_file audio.wav. Em seguida, use ffmpeg -i audio.wav audio.mp3 para converter. "
+          # Instrução para o OpenCode usar a correção gramatical e normalização
+          SYSTEM_PROMPT="O Piper TTS, LanguageTool (pt-BR) e num2words estão instalados. Antes de gerar o áudio, você DEVE: 1. Salvar o texto bruto em 'raw.txt'. 2. Executar 'python3 fix_and_normalize.py < raw.txt > final_text.txt' para garantir gramática, sintaxe e leitura fluida. 3. Gerar o áudio com 'cat final_text.txt | piper --model tts_models/pt_BR-cadu-medium.onnx --output_file audio.wav'. 4. Converter para mp3. "
           opencode run "$SYSTEM_PROMPT ${{ github.event.inputs.prompt }}" > "${{ github.event.inputs.filename }}"
 
       - name: Commit generated files safely
@@ -57,12 +102,11 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           
-          # Adiciona arquivos se existirem
           files_to_add=$(ls *.m3u *.txt *.mp3 *.mp4 *.wav 2>/dev/null || true)
           
           if [ -n "$files_to_add" ]; then
             git add $files_to_add
-            git commit -m "Adiciona arquivos gerados"
+            git commit -m "Adiciona arquivos gerados com correção gramatical"
             
             for i in 1 2 3; do
               git pull --rebase origin ${{ github.ref_name }} && break || sleep 2
