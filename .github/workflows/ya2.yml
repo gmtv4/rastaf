@@ -7,7 +7,7 @@ on:
         description: "O que você quer gerar"
         required: true
       filename:
-        description: "Nome do arquivo de saída (ex: lista.m3u)"
+        description: "Nome base do arquivo (sem extensão)"
         required: true
 
 jobs:
@@ -21,31 +21,44 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # importante para rebase
+          fetch-depth: 0
 
       - name: Install OpenCode
         run: |
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> $GITHUB_PATH
 
-      - name: Run OpenCode and save output
+      - name: Generate text with OpenCode
         run: |
-          opencode run "${{ github.event.inputs.prompt }}" > "${{ github.event.inputs.filename }}"
+          opencode run "${{ github.event.inputs.prompt }}" > texto.txt
 
-      - name: Commit generated file safely
+      - name: Install TTS (gTTS)
+        run: pip install gtts
+
+      - name: Convert text to MP3
+        run: |
+          python - <<EOF
+from gtts import gTTS
+
+with open("texto.txt", "r") as f:
+    text = f.read()
+
+tts = gTTS(text=text, lang="pt")
+tts.save("${{ github.event.inputs.filename }}.mp3")
+EOF
+
+      - name: Commit generated files safely
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          git add *.m3u *.txt || true
-          git commit -m "Adiciona arquivo gerado" || echo "Nada para commit"
+          git add *.txt *.mp3 || true
+          git commit -m "Adiciona audiolivro gerado" || echo "Nada para commit"
 
-          # Tenta sincronizar antes de enviar
           for i in 1 2 3; do
             git pull --rebase origin ${{ github.ref_name }} && break || sleep 2
           done
 
-          # Push com retry
           for i in 1 2 3; do
             git push origin HEAD:${{ github.ref_name }} && break || sleep 2
           done
