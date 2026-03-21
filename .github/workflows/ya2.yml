@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       prompt:
-        description: "O que você quer gerar"
+        description: "O que você quer gerar (ex: script que cria audio.mp3)"
         required: true
       filename:
-        description: "Arquivo de saída principal (opcional)"
+        description: "Nome do arquivo de saída principal (opcional)"
         required: false
 
 jobs:
@@ -28,41 +28,69 @@ jobs:
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> $GITHUB_PATH
 
-      # 🔥 Gera script em vez de só texto
+      # ----------------------------
+      # Gera script puro com opencode
+      # ----------------------------
       - name: Generate script with OpenCode
         run: |
           opencode run "${{ github.event.inputs.prompt }}" > script.sh
 
-      # 🔍 Debug do script gerado
+      # ----------------------------
+      # Corrige quebras de linha e aspas
+      # ----------------------------
+      - name: Fix script formatting
+        run: |
+          # remove CR no fim de linha
+          sed -i 's/\r$//' script.sh
+          # remove crases ou markdown, se houver
+          sed -i '/^```/d' script.sh
+
+      # ----------------------------
+      # Debug do script gerado
+      # ----------------------------
       - name: Show generated script
         run: |
           echo "===== SCRIPT GERADO ====="
-          cat script.sh
+          cat -n script.sh
 
-      # 🚀 Executa o que o opencode criou
-      - name: Run generated script
+      # ----------------------------
+      # Executa script de forma segura
+      # ----------------------------
+      - name: Run generated script safely
         run: |
           chmod +x script.sh
-          bash script.sh
+          bash script.sh || {
+            echo "❌ Script falhou. Conteúdo abaixo:"
+            cat script.sh
+            exit 1
+          }
 
-      # 🔍 Ver tudo que foi criado
+      # ----------------------------
+      # Lista arquivos gerados
+      # ----------------------------
       - name: List generated files
         run: |
           echo "Arquivos encontrados:"
           find . -type f
 
-      # 📦 Move mídias pra raiz
+      # ----------------------------
+      # Move arquivos de áudio para raiz
+      # ----------------------------
       - name: Collect media files
         run: |
           find . -type f \( -iname "*.mp3" -o -iname "*.wav" -o -iname "*.m4a" \) -exec mv {} . \; 2>/dev/null || true
 
-      # 🔍 Debug final
+      # ----------------------------
+      # Debug final
+      # ----------------------------
       - name: Final file list
         run: |
           echo "Arquivos finais:"
           find . -type f
 
-      # 💾 Commit de tudo
+      # ----------------------------
+      # Commit de tudo
+      # ----------------------------
       - name: Commit generated files safely
         run: |
           git config --global user.name "github-actions"
@@ -71,10 +99,12 @@ jobs:
           git add .
           git commit -m "Arquivos gerados dinamicamente" || echo "Nada para commit"
 
+          # sincroniza antes de enviar
           for i in 1 2 3; do
             git pull --rebase origin ${{ github.ref_name }} && break || sleep 2
           done
 
+          # push com retry
           for i in 1 2 3; do
             git push origin HEAD:${{ github.ref_name }} && break || sleep 2
           done
